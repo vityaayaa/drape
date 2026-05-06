@@ -12,8 +12,8 @@ export const useProjectStore = create((set, get) => ({
 
   // Снимок состояния без фотографий (для истории и IndexedDB)
   getSnapshot: () => {
-    const { activeTab, testCounter } = get()
-    return { activeTab, testCounter }
+    const { testCounter } = get()
+    return { testCounter }
   },
 
   // Восстановление из снимка

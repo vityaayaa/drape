@@ -24,11 +24,13 @@ export async function initDB() {
 export async function saveAll() {
   if (!db) return
   const snapshot = useProjectStore.getState().getSnapshot()
+  const { activeTab } = useProjectStore.getState()
   const history = {
     past: useHistoryStore.getState().past,
     future: useHistoryStore.getState().future,
   }
   await db.put('project', snapshot, 'state')
+  await db.put('project', activeTab, 'activeTab')
   await db.put('project', history, 'history')
 }
 
@@ -36,10 +38,14 @@ export async function saveAll() {
 export async function loadAll() {
   if (!db) return
   const state = await db.get('project', 'state')
+  const activeTab = await db.get('project', 'activeTab')
   const history = await db.get('project', 'history')
 
   if (state) {
     useProjectStore.getState().restoreSnapshot(state)
+  }
+  if (activeTab) {
+    useProjectStore.getState().setActiveTab(activeTab)
   }
   if (history) {
     useHistoryStore.setState({

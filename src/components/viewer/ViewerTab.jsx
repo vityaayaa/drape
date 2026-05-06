@@ -8,6 +8,7 @@ function RotatingCube() {
   const meshRef = useRef()
 
   useFrame((_, delta) => {
+    if (!meshRef.current) return
     meshRef.current.rotation.x += delta * 0.5
     meshRef.current.rotation.y += delta * 0.7
   })
