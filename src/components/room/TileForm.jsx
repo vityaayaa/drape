@@ -70,7 +70,7 @@ export default function TileForm({ overrides, onOverrideChange, onOverrideClear,
         />
       </div>
       {!isOverride && (
-        <button style={s.addBtn} onClick={addWall}>+ Добавить стену</button>
+        <button style={s.addBtn} onClick={() => { push(useProjectStore.getState().getSnapshot()); addWall() }}>+ Добавить стену</button>
       )}
     </div>
   )

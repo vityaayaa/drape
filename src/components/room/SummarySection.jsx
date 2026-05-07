@@ -1,20 +1,12 @@
 // src/components/room/SummarySection.jsx
-import { useMemo } from 'react'
 import { useProjectStore } from '../../store/projectStore.js'
-import { calculateGrid } from '../../utils/roomGeometry.js'
 
-export default function SummarySection() {
-  const { tile, walls, corners } = useProjectStore()
-
-  const results = useMemo(
-    () => calculateGrid(tile, walls, corners),
-    [tile, walls, corners]
-  )
-
-  const activeResults = results.filter(Boolean)
+export default function SummarySection({ results }) {
+  const { walls } = useProjectStore()
 
   if (walls.length === 0) return null
 
+  const activeResults = results.filter(Boolean)
   const totalTiles = activeResults.reduce((sum, r) => sum + r.total, 0)
 
   return (
