@@ -37,10 +37,10 @@ export default function CornersSection() {
 }
 
 const s = {
-  block:   { padding: '18px 20px', borderTop: '1px solid #e8eaed', background: '#fff', marginTop: 10 },
-  heading: { fontSize: 15, fontWeight: 700, marginBottom: 6, color: '#111827', letterSpacing: '-0.01em' },
-  hint:    { fontSize: 12, color: '#9ca3af', marginBottom: 14, lineHeight: 1.5 },
+  block:   { padding: '18px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', marginTop: 10 },
+  heading: { fontSize: 15, fontWeight: 700, marginBottom: 6, color: '#f1f5f9', letterSpacing: '-0.01em' },
+  hint:    { fontSize: 12, color: '#475569', marginBottom: 14, lineHeight: 1.5 },
   row:     { display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' },
-  label:   { flex: 1, fontSize: 13, color: '#374151', minWidth: 140 },
-  select:  { padding: '7px 10px', background: '#f9fafb', border: '1px solid #d1d5db', borderRadius: 7, color: '#111827', fontSize: 13 },
+  label:   { flex: 1, fontSize: 13, color: '#94a3b8', minWidth: 140 },
+  select:  { padding: '7px 10px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, color: '#f1f5f9', fontSize: 13 },
 }

@@ -29,7 +29,7 @@ export default function SummarySection({ results }) {
                 <td style={s.td}>{wall.name}</td>
                 <td style={s.tdNum}>{r ? r.columns : '—'}</td>
                 <td style={s.tdNum}>{r ? r.rows : '—'}</td>
-                <td style={{ ...s.tdNum, color: r?.blocked ? '#dc2626' : r?.warning ? '#d97706' : '#111827' }}>
+                <td style={{ ...s.tdNum, color: r?.blocked ? '#f87171' : r?.warning ? '#fbbf24' : '#f1f5f9' }}>
                   {r ? r.total.toLocaleString() : '—'}
                 </td>
               </tr>
@@ -42,7 +42,7 @@ export default function SummarySection({ results }) {
               <td style={s.td}>Итого</td>
               <td style={s.tdNum}>—</td>
               <td style={s.tdNum}>—</td>
-              <td style={{ ...s.tdNum, fontWeight: 700 }}>{totalTiles.toLocaleString()}</td>
+              <td style={{ ...s.tdNum, fontWeight: 700, color: '#a78bfa' }}>{totalTiles.toLocaleString()}</td>
             </tr>
           </tfoot>
         )}
@@ -52,12 +52,12 @@ export default function SummarySection({ results }) {
 }
 
 const s = {
-  block:   { padding: '18px 20px', borderTop: '1px solid #e8eaed', background: '#fff', marginTop: 10 },
-  heading: { fontSize: 15, fontWeight: 700, marginBottom: 14, color: '#111827', letterSpacing: '-0.01em' },
+  block:   { padding: '18px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', marginTop: 10 },
+  heading: { fontSize: 15, fontWeight: 700, marginBottom: 14, color: '#f1f5f9', letterSpacing: '-0.01em' },
   table:   { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
-  th:      { textAlign: 'left', padding: '6px 8px', color: '#9ca3af', borderBottom: '1px solid #e8eaed', fontWeight: 500, fontSize: 12 },
-  tr:      { borderBottom: '1px solid #f3f4f6' },
-  td:      { padding: '8px 8px', color: '#374151' },
-  tdNum:   { padding: '8px 8px', textAlign: 'right', color: '#111827', fontFamily: 'ui-monospace, monospace', fontSize: 13 },
-  footRow: { borderTop: '2px solid #e8eaed' },
+  th:      { textAlign: 'left', padding: '6px 8px', color: '#475569', borderBottom: '1px solid rgba(255,255,255,0.07)', fontWeight: 500, fontSize: 12 },
+  tr:      { borderBottom: '1px solid rgba(255,255,255,0.04)' },
+  td:      { padding: '8px 8px', color: '#94a3b8' },
+  tdNum:   { padding: '8px 8px', textAlign: 'right', color: '#f1f5f9', fontFamily: 'ui-monospace, monospace', fontSize: 13 },
+  footRow: { borderTop: '2px solid rgba(255,255,255,0.1)' },
 }

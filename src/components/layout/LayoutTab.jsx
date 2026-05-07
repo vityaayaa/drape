@@ -9,6 +9,6 @@ export default function LayoutTab() {
 
 const s = {
   container: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8 },
-  title:     { fontSize: 22, fontWeight: 700, color: '#111827' },
-  sub:       { fontSize: 14, color: '#9ca3af' },
+  title:     { fontSize: 22, fontWeight: 700, color: '#f1f5f9' },
+  sub:       { fontSize: 14, color: '#3f4a5e' },
 }

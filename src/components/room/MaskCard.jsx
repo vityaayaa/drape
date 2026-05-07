@@ -40,11 +40,11 @@ export default function MaskCard({ wallId, mask }) {
 }
 
 const s = {
-  row:        { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginBottom: 6, background: '#f8fafc', border: '1px solid #e8eaed', borderRadius: 7, padding: '7px 8px' },
-  input:      { padding: '4px 6px', background: '#fff', border: '1px solid #d1d5db', borderRadius: 5, color: '#111827', fontSize: 12 },
+  row:        { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, marginBottom: 6, background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 7, padding: '7px 8px' },
+  input:      { padding: '4px 6px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, color: '#f1f5f9', fontSize: 12, outline: 'none' },
   fieldWrap:  { display: 'flex', alignItems: 'center', gap: 2 },
-  fieldLabel: { fontSize: 11, color: '#6b7280' },
-  numInput:   { width: 52, padding: '4px 5px', background: '#fff', border: '1px solid #d1d5db', borderRadius: 5, color: '#111827', fontSize: 12 },
-  unit:       { fontSize: 11, color: '#9ca3af' },
-  delBtn:     { padding: '4px 7px', background: 'transparent', border: '1px solid #e5e7eb', borderRadius: 5, color: '#9ca3af', fontSize: 12, cursor: 'pointer' },
+  fieldLabel: { fontSize: 11, color: '#64748b' },
+  numInput:   { width: 52, padding: '4px 5px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, color: '#f1f5f9', fontSize: 12, outline: 'none' },
+  unit:       { fontSize: 11, color: '#475569' },
+  delBtn:     { padding: '4px 7px', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, color: '#475569', fontSize: 12, cursor: 'pointer' },
 }

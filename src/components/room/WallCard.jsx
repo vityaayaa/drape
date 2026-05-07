@@ -11,8 +11,14 @@ export default function WallCard({ wall, result }) {
   const hasWarning = result?.warning && !result?.blocked
   const hasBlocked = result?.blocked
 
+  const borderColor = hasBlocked
+    ? 'rgba(239,68,68,0.4)'
+    : hasWarning
+    ? 'rgba(251,191,36,0.35)'
+    : 'rgba(255,255,255,0.08)'
+
   return (
-    <div style={{ ...s.card, borderColor: hasBlocked ? '#fca5a5' : hasWarning ? '#fcd34d' : '#e8eaed' }}>
+    <div style={{ ...s.card, borderColor }}>
       {/* Заголовок */}
       <div style={s.header}>
         <input
@@ -88,25 +94,25 @@ export default function WallCard({ wall, result }) {
 }
 
 const s = {
-  card:          { background: '#fff', border: '1px solid #e8eaed', borderRadius: 12, marginBottom: 10, marginLeft: 16, marginRight: 16, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' },
-  header:        { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: '#f8fafc', borderBottom: '1px solid #e8eaed', flexWrap: 'wrap' },
-  nameInput:     { flex: 1, minWidth: 80, background: 'transparent', border: 'none', borderBottom: '1px solid #d1d5db', color: '#111827', fontSize: 14, fontWeight: 600, padding: '2px 4px' },
+  card:          { background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, marginBottom: 10, marginLeft: 16, marginRight: 16, overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' },
+  header:        { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(124,58,237,0.07)', borderBottom: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' },
+  nameInput:     { flex: 1, minWidth: 80, background: 'transparent', border: 'none', borderBottom: '1px solid rgba(139,92,246,0.5)', color: '#f1f5f9', fontSize: 14, fontWeight: 600, padding: '2px 4px', outline: 'none' },
   toggle:        { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' },
-  toggleLabel:   { fontSize: 12, color: '#6b7280' },
-  delBtn:        { marginLeft: 'auto', background: 'transparent', border: '1px solid #e5e7eb', borderRadius: 6, color: '#9ca3af', fontSize: 13, cursor: 'pointer', padding: '3px 8px' },
+  toggleLabel:   { fontSize: 12, color: '#64748b' },
+  delBtn:        { marginLeft: 'auto', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#475569', fontSize: 13, cursor: 'pointer', padding: '3px 8px' },
   sizeRow:       { display: 'flex', gap: 16, padding: '12px 14px 0' },
   field:         { display: 'flex', alignItems: 'center', gap: 6 },
-  label:         { fontSize: 13, color: '#6b7280' },
+  label:         { fontSize: 13, color: '#64748b' },
   inputWrap:     { display: 'flex', alignItems: 'center', gap: 4 },
-  input:         { width: 76, padding: '6px 8px', background: '#fff', border: '1px solid #d1d5db', borderRadius: 7, color: '#111827', fontSize: 13 },
-  unit:          { fontSize: 12, color: '#9ca3af' },
-  warning:       { margin: '8px 14px 0', padding: '7px 10px', background: '#fffbeb', border: '1px solid #fcd34d', color: '#92400e', borderRadius: 7, fontSize: 12 },
-  blocked:       { margin: '8px 14px 0', padding: '7px 10px', background: '#fef2f2', border: '1px solid #fca5a5', color: '#991b1b', borderRadius: 7, fontSize: 12 },
-  overrideToggle:{ display: 'block', margin: '10px 14px 0', background: 'transparent', border: 'none', color: '#6b7280', fontSize: 12, cursor: 'pointer', textAlign: 'left', padding: 0 },
-  overrideBlock: { margin: '4px 14px', border: '1px dashed #d1d5db', borderRadius: 8 },
+  input:         { width: 76, padding: '6px 8px', background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, color: '#f1f5f9', fontSize: 13, outline: 'none' },
+  unit:          { fontSize: 12, color: '#475569' },
+  warning:       { margin: '8px 14px 0', padding: '7px 10px', background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)', color: '#fbbf24', borderRadius: 7, fontSize: 12 },
+  blocked:       { margin: '8px 14px 0', padding: '7px 10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', borderRadius: 7, fontSize: 12 },
+  overrideToggle:{ display: 'block', margin: '10px 14px 0', background: 'transparent', border: 'none', color: '#475569', fontSize: 12, cursor: 'pointer', textAlign: 'left', padding: 0 },
+  overrideBlock: { margin: '4px 14px', border: '1px dashed rgba(139,92,246,0.2)', borderRadius: 8 },
   masksSection:  { padding: '10px 14px 14px' },
   masksHeader:   { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  masksTitle:    { fontSize: 12, color: '#6b7280', fontWeight: 600 },
-  addMaskBtn:    { padding: '4px 10px', background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe', borderRadius: 6, fontSize: 12, cursor: 'pointer' },
-  empty:         { fontSize: 12, color: '#d1d5db', margin: 0 },
+  masksTitle:    { fontSize: 12, color: '#475569', fontWeight: 600 },
+  addMaskBtn:    { padding: '4px 10px', background: 'rgba(139,92,246,0.12)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 6, fontSize: 12, cursor: 'pointer' },
+  empty:         { fontSize: 12, color: '#2d3748', margin: 0 },
 }
