@@ -1,7 +1,5 @@
 // src/components/room/TileForm.jsx
-import { useRef } from 'react'
 import { useProjectStore } from '../../store/projectStore.js'
-import { useHistoryStore } from '../../store/historyStore.js'
 
 const FIELDS = [
   { key: 'tile_width',     label: 'Ширина плитки',   unit: 'мм' },
@@ -12,16 +10,6 @@ const FIELDS = [
 
 export default function TileForm({ overrides, onOverrideChange, onOverrideClear, isOverride = false }) {
   const { tile, setTileParam, addWall } = useProjectStore()
-  const { push } = useHistoryStore()
-  const preEditSnapshot = useRef(null)
-
-  function handleFocus() {
-    preEditSnapshot.current = useProjectStore.getState().getSnapshot()
-  }
-
-  function handleBlur() {
-    if (preEditSnapshot.current) push(preEditSnapshot.current)
-  }
 
   function handleChange(key, value) {
     if (isOverride) {
@@ -33,7 +21,6 @@ export default function TileForm({ overrides, onOverrideChange, onOverrideClear,
   }
 
   function handleColorChange(value) {
-    push(useProjectStore.getState().getSnapshot())
     if (isOverride) onOverrideChange('grout_color', value)
     else setTileParam('grout_color', value)
   }
@@ -52,9 +39,7 @@ export default function TileForm({ overrides, onOverrideChange, onOverrideClear,
               step="any"
               placeholder="—"
               value={isOverride ? (overrides?.[key] ?? '') : tile[key]}
-              onFocus={handleFocus}
               onChange={(e) => handleChange(key, e.target.value)}
-              onBlur={handleBlur}
             />
             <span style={s.unit}>{unit}</span>
           </div>
@@ -70,20 +55,20 @@ export default function TileForm({ overrides, onOverrideChange, onOverrideClear,
         />
       </div>
       {!isOverride && (
-        <button style={s.addBtn} onClick={() => { push(useProjectStore.getState().getSnapshot()); addWall() }}>+ Добавить стену</button>
+        <button style={s.addBtn} onClick={() => addWall()}>+ Добавить стену</button>
       )}
     </div>
   )
 }
 
 const s = {
-  block:      { padding: '16px', borderBottom: '1px solid #333' },
-  heading:    { fontSize: 16, fontWeight: 700, marginBottom: 12, color: '#f0f0f0' },
+  block:      { padding: '18px 20px', borderBottom: '1px solid #e8eaed', background: '#fff' },
+  heading:    { fontSize: 15, fontWeight: 700, marginBottom: 14, color: '#111827', letterSpacing: '-0.01em' },
   row:        { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 },
-  label:      { flex: 1, fontSize: 13, color: '#aaa' },
+  label:      { flex: 1, fontSize: 13, color: '#6b7280' },
   inputWrap:  { display: 'flex', alignItems: 'center', gap: 4 },
-  input:      { width: 80, padding: '6px 8px', background: '#2a2a2a', border: '1px solid #444', borderRadius: 6, color: '#f0f0f0', fontSize: 13 },
-  unit:       { fontSize: 12, color: '#888', width: 20 },
-  colorInput: { width: 40, height: 32, border: 'none', borderRadius: 6, cursor: 'pointer', background: 'none' },
-  addBtn:     { marginTop: 12, width: '100%', padding: '10px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, cursor: 'pointer' },
+  input:      { width: 84, padding: '7px 9px', background: '#f9fafb', border: '1px solid #d1d5db', borderRadius: 7, color: '#111827', fontSize: 13 },
+  unit:       { fontSize: 12, color: '#9ca3af', width: 22 },
+  colorInput: { width: 40, height: 34, border: '1px solid #d1d5db', borderRadius: 7, cursor: 'pointer', background: 'none', padding: 2 },
+  addBtn:     { marginTop: 14, width: '100%', padding: '11px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: 9, fontSize: 14, fontWeight: 600, cursor: 'pointer', letterSpacing: '-0.01em' },
 }

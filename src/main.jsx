@@ -4,7 +4,6 @@ import App from './App.jsx'
 import './App.css'
 import { initDB, loadAll, saveAll } from './store/persistence.js'
 import { useProjectStore } from './store/projectStore.js'
-import { useHistoryStore } from './store/historyStore.js'
 
 async function bootstrap() {
   // 1. Открыть базу данных
@@ -22,7 +21,6 @@ async function bootstrap() {
 
   // 4. Подписаться на изменения — авто-сохранение при каждом обновлении
   useProjectStore.subscribe(() => saveAll())
-  useHistoryStore.subscribe(() => saveAll())
 }
 
 bootstrap()
