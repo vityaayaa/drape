@@ -37,11 +37,15 @@ function getCornerWinner(leftWall, rightWall, cornerKey, corners, walls, globalT
 function countMaskedTiles(mask, tw, th, gw) {
   const stepX = tw + gw
   const stepY = th + gw
-  const mx = parseNum(mask.x) * 10
-  const my = parseNum(mask.y) * 10
-  const mw = parseNum(mask.width) * 10
-  const mh = parseNum(mask.height) * 10
-  if ([mx, my, mw, mh].some(v => v === null || isNaN(v))) return 0
+  const rawX = parseNum(mask.x)
+  const rawY = parseNum(mask.y)
+  const rawW = parseNum(mask.width)
+  const rawH = parseNum(mask.height)
+  if ([rawX, rawY, rawW, rawH].some(v => v === null)) return 0
+  const mx = rawX * 10
+  const my = rawY * 10
+  const mw = rawW * 10
+  const mh = rawH * 10
   const colStart = Math.ceil(mx / stepX)
   const colEnd = Math.floor((mx + mw) / stepX)
   const rowStart = Math.ceil(my / stepY)
@@ -100,11 +104,11 @@ export function calculateGrid(globalTile, walls, corners) {
     const total_before_masks = columns * rows
 
     let total_masked = 0
-    for (const mask of wall.masks) {
+    for (const mask of wall.masks ?? []) {
       total_masked += countMaskedTiles(mask, tw, th, gw)
     }
 
-    const total = total_before_masks - total_masked
+    const total = Math.max(0, total_before_masks - total_masked)
 
     return {
       wallId: wall.id,

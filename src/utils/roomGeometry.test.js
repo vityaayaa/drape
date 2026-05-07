@@ -85,7 +85,7 @@ describe('calculateGrid — маски', () => {
 
 describe('calculateGrid — лимиты', () => {
   it('выставляет warning и blocked при > 75000', () => {
-    // 600cm × 300cm, плитка 5мм без шва → 1200×600=72000 плиток → blocked
+    // 600cm × 300cm, плитка 5мм без шва → 1200×600=720000 плиток → blocked
     const bigWall = { tile_width: '5', tile_height: '5', tile_thickness: '0', grout_width: '0', grout_color: '#ccc' }
     const walls = [{ id: 'w1', length: '600', height: '300', wall_active: true, mosaic_active: true, tile_overrides: {}, masks: [] }]
     const r = calculateGrid(bigWall, walls, {})[0]
