@@ -1,13 +1,27 @@
-# Stage 4 — Pixelizer: Design Spec
+# Этап 4 — Pixelizer: дизайн
 
-Date: 2026-05-12
-Branch: `stage_4`
+Дата: 2026-05-12
+Ветка: `stage_4`
 
 ---
 
-## Scope
+## Область этапа
 
-Вкладка «Фото»: плоская горизонтальная развёртка всех стен комнаты с наложением мозаичной сетки и фотографий. Фотографии хранятся в отдельной таблице IndexedDB (не попадают в снапшот undo/redo). Маски-препятствия получают поле цвета (изменение в Room tab).
+Вкладка «Фото»: плоская горизонтальная развёртка всех стен комнаты с двумя режимами работы — позиционирование фото и пикселизация (вычисление цвета каждой плитки из зоны фото). Маски-препятствия получают поле цвета (изменение в Room tab). Фотографии хранятся в отдельной таблице IndexedDB (не попадают в снапшот undo/redo). Вычисленные цвета плиток сохраняются в основном снапшоте и передаются в Stage 3 (3D) и Stage 5 (Схема).
+
+---
+
+## Два режима работы
+
+### Режим 1 — Позиционирование («Фото»)
+
+Пользователь загружает фото, двигает и масштабирует его, настраивает прозрачность. На каждой стене: фото видно сквозь «окна» плиток, швы непрозрачны в цвете шва (Вариант А).
+
+### Режим 2 — Мозаика («Пикселизировать»)
+
+После нажатия кнопки «Пикселизировать»: приложение вычисляет средний цвет каждой плитки из соответствующей зоны фото. Каждый тайл заливается вычисленным цветом. Швы — в цвете шва. Фото больше не видно — только цветная мозаика.
+
+Переключение между режимами не уничтожает данные: всегда можно вернуться к позиционированию, перепозиционировать фото и нажать «Пикселизировать» заново.
 
 ---
 
@@ -15,50 +29,39 @@ Branch: `stage_4`
 
 ### Верхняя зона — развёртка стен
 
-Все активные (wall_active = true) стены рисуются в горизонтальный ряд на общем Canvas. Каждая стена — пропорциональный прямоугольник в масштабе, рассчитанном от высоты экрана.
+Все активные (wall_active = true) стены рисуются в горизонтальный ряд на Canvas. Каждая стена — пропорциональный прямоугольник в масштабе от высоты экрана.
 
 **Базовый масштаб:**
 ```
 BASE_SCALE = (viewportHeight × 0.75) / maxWallHeight_mm
 ```
-При старте — всё видно по высоте. Ширина может выходить за экран → горизонтальный скролл.
+При старте — все стены влезают по высоте. Ширина может выходить за экран → горизонтальный скролл.
 
 **Жесты:**
 - Свайп одним пальцем по горизонтали → прокрутка развёртки
-- Щипок двумя пальцами → зум всей развёртки (CSS transform scale на контейнере)
-- Тап на стену → выбрать стену для редактирования фото (нижняя панель переключается)
+- Щипок двумя пальцами → зум всей развёртки (CSS transform scale)
+- Тап на стену → выбрать стену (нижняя панель переключается)
 
 **Отступ между стенами:** 16px (в масштабированных единицах).
 
-### Рендеринг каждой стены (Canvas, Вариант А)
-
-Слои снизу вверх:
-
-1. **Фон стены** — заливка цветом `#2a2a3a` (нейтральный тёмный, если фото нет)
-2. **Фото** (если добавлено) — `drawImage` с применением `offsetX_mm`, `offsetY_mm`, `scale` и `opacity`
-3. **Плиточная сетка** (если tile params заполнены и grid ON):
-   - Сначала вся область стены заливается цветом шва (`grout_color`)
-   - Затем поверх рисуется каждый тайл — прямоугольник вырезает «окно» в фото через `drawImage` с clip-регионом
-   - Ячейки, полностью внутри маски → не рисуются (ни заливка, ни clip)
-   - Граничные ячейки (частично перекрыты маской) → рисуются
-4. **Маски** — `fillRect` в цвете маски с `globalAlpha = 0.55`
-
-**Результат Варианта А:** фото видно сквозь «окна» каждой плитки; швы непрозрачны в цвете шва; маска — цветная полупрозрачная плашка.
-
 ### Нижняя панель управления
 
-Фиксирована по низу экрана, над навигацией. Три режима:
+Фиксирована по низу экрана, над навигацией.
 
-**Режим по умолчанию:**
+**Режим позиционирования — панель по умолчанию:**
 ```
-[ Стены ▾ ]  [ + Фото ]  [ ≡ Сетка вкл ]
+[ Стены ▾ ]  [ + Фото ]  [ Сетка ]  [ Пикселизировать → ]
 ```
 
-**Когда выбрана стена с фото (тап на стену):**
+**Когда выбрана стена с фото (тап на стену), добавляется строка управления фото:**
 ```
 [ X: __ мм ]  [ Y: __ мм ]  [ Масштаб: __% ]  [ Прозрачность: ─●── ]
 ```
-Числовые поля и слайдер прозрачности (0–100%).
+
+**Режим мозаики:**
+```
+[ ← Назад к фото ]  [ Стены ▾ ]  [ Сетка ]
+```
 
 **Кнопка «Стены»** → шторка снизу:
 - Список всех стен с чекбоксами (видимость)
@@ -68,7 +71,9 @@ BASE_SCALE = (viewportHeight × 0.75) / maxWallHeight_mm
 - «Добавить на все стены»
 - Список конкретных стен (нажать → выбрать файл)
 
-**Кнопка «≡ Сетка вкл/выкл»** → переключает отображение плиточной сетки на всех стенах.
+**Кнопка «Сетка»** → переключает отображение плиточной сетки на всех стенах.
+
+**Кнопка «Пикселизировать →»** → запускает вычисление цветов, переключает в режим мозаики.
 
 ---
 
@@ -94,20 +99,31 @@ BASE_SCALE = (viewportHeight × 0.75) / maxWallHeight_mm
 
 ```js
 pixelizer: {
+  mode: 'photo',             // 'photo' | 'mosaic'
   visibleWalls: null,        // null = все; string[] = список wall id
-  gridVisible: true,         // сетка вкл/выкл
+  gridVisible: true,
   photoSettings: {
-    // wallId → настройки позиции/прозрачности
+    // wallId → позиция/прозрачность фото
     'w_123': {
       photoId: 'ph_456',     // ключ в IndexedDB таблице photos
       offsetX_mm: 0,
       offsetY_mm: 0,
       scale: 1.0,
-      opacity: 1.0,          // 0..1
+      opacity: 1.0,
+    }
+  },
+  tileColors: {
+    // wallId → Map вычисленных цветов плиток
+    'w_123': {
+      '0_0': '#a3b4c2',      // ключ: "col_row", значение: hex-цвет
+      '0_1': '#8fa2b1',
+      // ...
     }
   }
 }
 ```
+
+`tileColors` входит в снапшот → undo/redo возвращает цвета; также используется Stage 3 (3D) и Stage 5 (Схема).
 
 ### IndexedDB
 
@@ -115,7 +131,7 @@ pixelizer: {
 ```
 photos store: key=photoId (string), value=Blob
 ```
-Блоб конвертируется в ObjectURL при рендеринге; не попадает в снапшот undo/redo.
+Блоб не входит в снапшот undo/redo.
 
 ---
 
@@ -132,51 +148,85 @@ src/components/pixelizer/
 src/utils/
   pixelizerRenderer.js      — чистые функции рисования (без React, без стора)
   pixelizerGeometry.js      — перевод wall data → canvas-координаты (масштаб)
+  pixelizerSampler.js       — вычисление среднего цвета тайла из зоны фото
 ```
 
 ---
 
-## Рендеринг: алгоритм (pixelizerRenderer.js)
+## Алгоритм рендеринга (pixelizerRenderer.js)
+
+### Режим «Фото» (Вариант А — шов вырезает фото)
 
 ```
-drawWall(ctx, wall, tileParams, photo, photoSettings, canvasScale):
+drawWallPhoto(ctx, W, H, tileGrid, photo, photoSettings, masks):
 
-  1. fillRect(0, 0, W, H) цветом #2a2a3a     // фон по умолчанию
+  1. fillRect(0, 0, W, H) цветом #2a2a3a          // фон
 
-  2. если gridVisible И tile params заполнены:
+  2. если gridVisible И tileGrid задан:
+       a. fillRect(0, 0, W, H) цветом grout_color  // вся стена = цвет шва
+       b. globalAlpha = photo ? photoSettings.opacity : 1.0
+          Для каждого тайла (col, row) не внутри маски:
+            ctx.save()
+            ctx.beginPath()
+            ctx.rect(tileX, tileY, tileW, tileH)
+            ctx.clip()
+            если photo: ctx.drawImage(photo, с учётом offset/scale)
+            иначе:      ctx.fillStyle = '#3a3a4a'
+                        ctx.fillRect(tileX, tileY, tileW, tileH)
+            ctx.restore()
+       c. globalAlpha = 1.0
 
-       a. fillRect(0, 0, W, H) цветом grout_color
-          // Вся стена залита цветом шва — это и есть швы
-
-       b. ctx.globalAlpha = photo ? photoSettings.opacity : 1.0
-          Для каждого тайла (col, row) в [0..cols) × [0..rows):
-            - если тайл полностью внутри хотя бы одной маски → пропустить
-            - иначе:
-                ctx.save()
-                ctx.rect(tileX, tileY, tileW, tileH)   // clip-регион = окно плитки
-                ctx.clip()
-                если photo:  ctx.drawImage(photo, ...)  // кусок фото в окне
-                иначе:       ctx.fillStyle = '#3a3a4a'
-                             ctx.fillRect(tileX, tileY, tileW, tileH)
-                ctx.restore()
-          ctx.globalAlpha = 1.0
-
-  3. если НЕ gridVisible (или tile params не заполнены) И photo:
-       ctx.globalAlpha = photoSettings.opacity
+  3. если НЕ gridVisible И photo:
+       globalAlpha = photoSettings.opacity
        ctx.drawImage(photo, offsetX_px, offsetY_px, photoW_px, photoH_px)
-       ctx.globalAlpha = 1.0
-       // Показываем фото без нарезки на плитки
+       globalAlpha = 1.0
 
   4. Для каждой маски:
-       ctx.globalAlpha = 0.55
-       ctx.fillStyle = mask.color
-       ctx.fillRect(maskX_px, maskY_px, maskW_px, maskH_px)
-       ctx.globalAlpha = 1.0
+       globalAlpha = 0.55
+       fillStyle = mask.color
+       fillRect(maskX_px, maskY_px, maskW_px, maskH_px)
+       globalAlpha = 1.0
 ```
 
-`offsetX_mm` / `offsetY_mm` переводятся в пиксели через `canvasScale` (px/mm) перед вызовом `drawWall`.
+### Режим «Мозаика»
 
-**Производительность:** при walls с > 5000 плиток — рендеринг переносится в Web Worker через OffscreenCanvas (папка `src/workers/` заложена в Stage 1). При ≤ 5000 — рисуем в main thread.
+```
+drawWallMosaic(ctx, W, H, tileGrid, tileColors, masks):
+
+  1. fillRect(0, 0, W, H) цветом grout_color      // фон = цвет шва
+
+  2. Для каждого тайла (col, row) не внутри маски:
+       color = tileColors['col_row'] ?? '#3a3a4a'
+       fillStyle = color
+       fillRect(tileX, tileY, tileW, tileH)
+
+  3. Для каждой маски:
+       globalAlpha = 0.55
+       fillStyle = mask.color
+       fillRect(maskX_px, maskY_px, maskW_px, maskH_px)
+       globalAlpha = 1.0
+```
+
+---
+
+## Алгоритм пикселизации (pixelizerSampler.js)
+
+Вызывается при нажатии «Пикселизировать». Для каждой стены с фото и заданными параметрами плитки:
+
+```
+sampleWallColors(photo, photoSettings, tileGrid, canvasScale) → { 'col_row': hexColor }
+
+  1. Создать offscreen canvas размером стены (W × H)
+  2. Нарисовать фото с применением offset/scale/opacity
+  3. Для каждого тайла (col, row) не внутри маски:
+       a. px = getImageData(tileX, tileY, tileW, tileH)
+       b. Вычислить средний R, G, B по всем пикселям зоны
+       c. Сохранить как '#rrggbb'
+
+  Возвращает объект { '0_0': '#a3b4c2', ... }
+```
+
+Для стен с > 5 000 плиток — вычисление в Web Worker (`src/workers/pixelizerWorker.js`) чтобы не блокировать UI.
 
 ---
 
@@ -186,7 +236,7 @@ drawWall(ctx, wall, tileParams, photo, photoSettings, canvasScale):
 Пользователь выбирает файл
 → FileReader → Blob
 → idb.put('photos', blob, photoId)
-→ projectStore.pixelizer.photoSettings[wallId] = { photoId, offsetX_mm: 0, offsetY_mm: 0, scale: 1.0, opacity: 1.0 }
+→ projectStore.pixelizer.photoSettings[wallId] = { photoId, offsetX_mm: 0, ... }
 → Автосохранение projectStore срабатывает (photoSettings — часть снапшота)
 → При восстановлении: idb.get('photos', photoId) → ObjectURL
 ```
@@ -195,15 +245,17 @@ drawWall(ctx, wall, tileParams, photo, photoSettings, canvasScale):
 
 ## UX-поведение
 
-**Нет параметров плитки** → сетка не рисуется; на Canvas только фон + фото (если есть) + маски.
+**Нет параметров плитки** → сетка и кнопка «Пикселизировать» недоступны; показывается только фото на фоне стены.
 
-**Нет фото** → в каждом тайл-окне — нейтральный цвет `#3a3a4a`. Выглядит как «пустая мозаика».
+**Нет фото** → режим «Фото» показывает нейтральный цвет `#3a3a4a` в каждом тайл-окне. Режим «Мозаика» недоступен (нечего пикселизировать).
 
-**Стена без размеров** → рисуется как прямоугольник-заглушка с надписью «нет данных».
+**Стена без размеров** → прямоугольник-заглушка с надписью «нет данных».
 
-**Удаление стены** → её photoSettings и запись в `photos` (IndexedDB) удаляются.
+**Перепозиционировал фото после пикселизации** → цвета в `tileColors` устаревают; кнопка «Пикселизировать» снова активна (и визуально подсвечена как «обновить»).
 
-**Отмена/повтор** → затрагивает только `pixelizer.visibleWalls`, `gridVisible`, `photoSettings` (позиция/прозрачность). Сами Blob-фотографии не входят в undo/redo.
+**Удаление стены** → удаляются `photoSettings[wallId]`, `tileColors[wallId]`, запись в IndexedDB `photos`.
+
+**Undo/Redo** → возвращает `pixelizer.mode`, `visibleWalls`, `gridVisible`, `photoSettings` (позиция/прозрачность), `tileColors`. Blob-файлы не входят в историю.
 
 ---
 
@@ -211,8 +263,8 @@ drawWall(ctx, wall, tileParams, photo, photoSettings, canvasScale):
 
 | Файл | Изменение |
 |------|-----------|
-| `src/store/projectStore.js` | Добавить срез `pixelizer`, метод `setPhotoSettings`, `setPixelizerParam`. Добавить `color` к маскам в `addMask`. |
-| `src/store/persistence.js` | Убедиться, что `photos` таблица создаётся; добавить хелперы `savePhoto`, `loadPhoto`, `deletePhoto`. |
+| `src/store/projectStore.js` | Добавить срез `pixelizer`, методы `setPhotoSettings`, `setTileColors`, `setPixelizerMode`, `setPixelizerParam`. Добавить `color` к маскам в `addMask`. |
+| `src/store/persistence.js` | Убедиться, что таблица `photos` создаётся; добавить хелперы `savePhoto`, `loadPhoto`, `deletePhoto`. |
 | `src/components/room/MaskCard.jsx` | Добавить color picker к полям маски. |
 
 ---
@@ -226,15 +278,16 @@ drawWall(ctx, wall, tileParams, photo, photoSettings, canvasScale):
 | `src/components/pixelizer/PixelizerControls.jsx` | Нижняя панель |
 | `src/components/pixelizer/PhotoSheet.jsx` | Шторка добавления фото |
 | `src/components/pixelizer/WallsSheet.jsx` | Шторка видимости стен |
-| `src/utils/pixelizerRenderer.js` | Логика рисования |
+| `src/utils/pixelizerRenderer.js` | Логика рисования (оба режима) |
 | `src/utils/pixelizerGeometry.js` | Пересчёт координат |
-| `src/workers/pixelizerWorker.js` | Web Worker для > 5000 плиток |
+| `src/utils/pixelizerSampler.js` | Вычисление среднего цвета тайла |
+| `src/workers/pixelizerWorker.js` | Web Worker для > 5 000 плиток |
 
 ---
 
-## Out of Scope для Stage 4
+## Вне области Stage 4
 
-- Индивидуальный цвет каждой плитки (это Stage 5 / Схема)
+- Ручное редактирование цвета отдельной плитки (Stage 5 — Схема)
 - 3D-вид (Stage 3)
 - Экспорт развёртки как изображения (Stage 6 — Export tab)
 - Редактирование маски прямо на развёртке (только через Room tab)
