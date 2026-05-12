@@ -12,11 +12,21 @@ const DEFAULT_TILE = {
   grout_color: '#cccccc',
 }
 
+const DEFAULT_PIXELIZER = {
+  mode: 'photo',           // 'photo' | 'mosaic'
+  visibleWalls: null,      // null = все стены видны; string[] = список id
+  gridVisible: true,
+  photoSettings: {},       // wallId → { photoId, offsetX_mm, offsetY_mm, scale, opacity }
+  tileColors: {},          // wallId → { 'col_row': '#rrggbb' }
+  tileColorsStale: {},     // wallId → bool
+}
+
 export const useProjectStore = create((set, get) => ({
   activeTab: 'room',
   tile: { ...DEFAULT_TILE },
   walls: [],
   corners: {},
+  pixelizer: { ...DEFAULT_PIXELIZER },
 
   setActiveTab: (tab) => set({ activeTab: tab }),
 
@@ -44,7 +54,17 @@ export const useProjectStore = create((set, get) => ({
       const corners = Object.fromEntries(
         Object.entries(s.corners).filter(([k]) => !k.includes(id))
       )
-      return { walls, corners }
+      const photoSettings = { ...s.pixelizer.photoSettings }
+      const tileColors    = { ...s.pixelizer.tileColors }
+      const tileColorsStale = { ...s.pixelizer.tileColorsStale }
+      delete photoSettings[id]
+      delete tileColors[id]
+      delete tileColorsStale[id]
+      return {
+        walls,
+        corners,
+        pixelizer: { ...s.pixelizer, photoSettings, tileColors, tileColorsStale },
+      }
     }),
 
   updateWall: (id, field, value) =>
@@ -76,7 +96,7 @@ export const useProjectStore = create((set, get) => ({
     set((s) => ({
       walls: s.walls.map((w) =>
         w.id === wallId
-          ? { ...w, masks: [...w.masks, { id: genId('m'), name: '', x: '', y: '', width: '', height: '' }] }
+          ? { ...w, masks: [...w.masks, { id: genId('m'), name: '', x: '', y: '', width: '', height: '', color: '#888888' }] }
           : w
       ),
     })),
@@ -101,16 +121,45 @@ export const useProjectStore = create((set, get) => ({
   setCorner: (key, value) =>
     set((s) => ({ corners: { ...s.corners, [key]: value } })),
 
+  // --- Pixelizer ---
+  setPixelizerMode: (mode) =>
+    set((s) => ({ pixelizer: { ...s.pixelizer, mode } })),
+
+  setGridVisible: (v) =>
+    set((s) => ({ pixelizer: { ...s.pixelizer, gridVisible: v } })),
+
+  setVisibleWalls: (walls) =>
+    set((s) => ({ pixelizer: { ...s.pixelizer, visibleWalls: walls } })),
+
+  setPhotoSettings: (wallId, settings) =>
+    set((s) => ({
+      pixelizer: {
+        ...s.pixelizer,
+        photoSettings: { ...s.pixelizer.photoSettings, [wallId]: settings },
+        tileColorsStale: { ...s.pixelizer.tileColorsStale, [wallId]: true },
+      },
+    })),
+
+  setTileColors: (wallId, colors) =>
+    set((s) => ({
+      pixelizer: {
+        ...s.pixelizer,
+        tileColors: { ...s.pixelizer.tileColors, [wallId]: colors },
+        tileColorsStale: { ...s.pixelizer.tileColorsStale, [wallId]: false },
+      },
+    })),
+
   // --- Снимок для undo/redo и IndexedDB ---
   getSnapshot: () => {
-    const { tile, walls, corners } = get()
-    return { tile, walls, corners }
+    const { tile, walls, corners, pixelizer } = get()
+    return { tile, walls, corners, pixelizer }
   },
 
   restoreSnapshot: (snapshot) =>
     set({
-      tile: snapshot.tile ?? { ...DEFAULT_TILE },
-      walls: snapshot.walls ?? [],
-      corners: snapshot.corners ?? {},
+      tile:      snapshot.tile      ?? { ...DEFAULT_TILE },
+      walls:     snapshot.walls     ?? [],
+      corners:   snapshot.corners   ?? {},
+      pixelizer: snapshot.pixelizer ?? { ...DEFAULT_PIXELIZER },
     }),
 }))
