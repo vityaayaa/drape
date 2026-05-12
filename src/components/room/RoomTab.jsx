@@ -1,47 +1,37 @@
+// src/components/room/RoomTab.jsx
+import { useMemo } from 'react'
 import { useProjectStore } from '../../store/projectStore.js'
-import { useHistoryStore } from '../../store/historyStore.js'
+import { calculateGrid } from '../../utils/roomGeometry.js'
+import TileForm from './TileForm.jsx'
+import WallCard from './WallCard.jsx'
+import CornersSection from './CornersSection.jsx'
+import SummarySection from './SummarySection.jsx'
 
 export default function RoomTab() {
-  const { testCounter, incrementCounter } = useProjectStore()
-  const { past, future, push, undo, redo } = useHistoryStore()
+  const { tile, walls, corners } = useProjectStore()
 
-  const handleIncrement = () => {
-    push(useProjectStore.getState().getSnapshot())
-    incrementCounter()
-  }
-
-  const handleUndo = () => {
-    const prev = undo(useProjectStore.getState().getSnapshot())
-    if (prev) useProjectStore.getState().restoreSnapshot(prev)
-  }
-
-  const handleRedo = () => {
-    const next = redo(useProjectStore.getState().getSnapshot())
-    if (next) useProjectStore.getState().restoreSnapshot(next)
-  }
+  const results = useMemo(
+    () => calculateGrid(tile, walls, corners),
+    [tile, walls, corners]
+  )
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Комната</h1>
-      <p style={styles.subtitle}>Раздел появится в этапе 2</p>
-      <div style={styles.undoRow}>
-        <button style={styles.btn} onClick={handleUndo} disabled={past.length === 0}>↩ Отменить</button>
-        <button style={styles.btn} onClick={handleRedo} disabled={future.length === 0}>↪ Повторить</button>
-      </div>
-      <div style={styles.counterBlock}>
-        <p style={styles.counterLabel}>Тест undo/redo: {testCounter}</p>
-        <button style={styles.btn} onClick={handleIncrement}>+1</button>
-      </div>
+    <div style={s.page}>
+      <TileForm />
+      {walls.length === 0 && (
+        <p style={s.emptyHint}>Добавь первую стену — нажми кнопку выше.</p>
+      )}
+      {walls.map((wall, i) => (
+        <WallCard key={wall.id} wall={wall} result={results[i] ?? null} />
+      ))}
+      <CornersSection />
+      <SummarySection results={results} />
+      <div style={{ height: 40 }} />
     </div>
   )
 }
 
-const styles = {
-  container: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 },
-  title:     { fontSize: 28, fontWeight: 700 },
-  subtitle:  { fontSize: 14, color: '#888' },
-  undoRow:   { display: 'flex', gap: 12 },
-  counterBlock: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 },
-  counterLabel: { fontSize: 18 },
-  btn:       { padding: '10px 20px', background: '#2a2a2a', color: '#f0f0f0', border: '1px solid #444', borderRadius: 8, fontSize: 14, cursor: 'pointer' },
+const s = {
+  page:      { overflowY: 'auto', height: '100%', color: '#f1f5f9' },
+  emptyHint: { padding: '40px 20px', color: '#3f4a5e', fontSize: 14, textAlign: 'center' },
 }

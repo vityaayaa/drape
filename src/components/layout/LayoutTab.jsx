@@ -1,47 +1,14 @@
-import { useProjectStore } from '../../store/projectStore.js'
-import { useHistoryStore } from '../../store/historyStore.js'
-
 export default function LayoutTab() {
-  const { testCounter, incrementCounter } = useProjectStore()
-  const { past, future, push, undo, redo } = useHistoryStore()
-
-  const handleIncrement = () => {
-    push(useProjectStore.getState().getSnapshot())
-    incrementCounter()
-  }
-
-  const handleUndo = () => {
-    const prev = undo(useProjectStore.getState().getSnapshot())
-    if (prev) useProjectStore.getState().restoreSnapshot(prev)
-  }
-
-  const handleRedo = () => {
-    const next = redo(useProjectStore.getState().getSnapshot())
-    if (next) useProjectStore.getState().restoreSnapshot(next)
-  }
-
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Укладка</h1>
-      <p style={styles.subtitle}>Раздел появится в этапе 7</p>
-      <div style={styles.undoRow}>
-        <button style={styles.btn} onClick={handleUndo} disabled={past.length === 0}>↩ Отменить</button>
-        <button style={styles.btn} onClick={handleRedo} disabled={future.length === 0}>↪ Повторить</button>
-      </div>
-      <div style={styles.counterBlock}>
-        <p style={styles.counterLabel}>Тест undo/redo: {testCounter}</p>
-        <button style={styles.btn} onClick={handleIncrement}>+1</button>
-      </div>
+    <div style={s.container}>
+      <p style={s.title}>Укладка</p>
+      <p style={s.sub}>Раздел появится в этапе 7</p>
     </div>
   )
 }
 
-const styles = {
-  container: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 16 },
-  title:     { fontSize: 28, fontWeight: 700 },
-  subtitle:  { fontSize: 14, color: '#888' },
-  undoRow:   { display: 'flex', gap: 12 },
-  counterBlock: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 },
-  counterLabel: { fontSize: 18 },
-  btn:       { padding: '10px 20px', background: '#2a2a2a', color: '#f0f0f0', border: '1px solid #444', borderRadius: 8, fontSize: 14, cursor: 'pointer' },
+const s = {
+  container: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 8 },
+  title:     { fontSize: 22, fontWeight: 700, color: '#f1f5f9' },
+  sub:       { fontSize: 14, color: '#3f4a5e' },
 }
