@@ -1,6 +1,6 @@
 # Этап 2 — Модель комнаты: план реализации
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Для агентов:** ОБЯЗАТЕЛЬНЫЙ СУБ-СКИЛЛ: используй superpowers:subagent-driven-development (рекомендуется) или superpowers:executing-plans для реализации плана шаг за шагом. Шаги отмечаются чекбоксами (`- [ ]`).
 
 **Цель:** Реализовать вкладку «Комната» — форму ввода стен и плитки, маски-препятствия, настройку углов, расчёт сетки и лимиты плиток.
 

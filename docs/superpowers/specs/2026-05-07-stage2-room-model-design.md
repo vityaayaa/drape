@@ -1,135 +1,135 @@
-# Stage 2 — Room Model: Design Spec
+# Этап 2 — Модель комнаты: дизайн
 
-Date: 2026-05-07
-Branch: stage_2
+Дата: 2026-05-07
+Ветка: `stage_2`
 
-## Scope
+## Область этапа
 
-Room settings tab: wall form, tile params, obstacle masks, corner overlap settings, grid calculation, tile count limits. No 3D — logic and numbers only.
+Вкладка «Комната»: форма ввода стен и плитки, маски-препятствия, настройка перекрытия углов, расчёт сетки, лимиты плиток. Без 3D — только логика и числа.
 
-## Data Model (projectStore.js)
+## Модель данных (projectStore.js)
 
-### Global tile params
+### Глобальные параметры плитки
 
 ```js
 tile: {
-  tile_width: '',       // mm, empty string = unset
-  tile_height: '',      // mm
-  tile_thickness: '',   // mm
-  grout_width: '',      // mm
+  tile_width: '',       // мм, пустая строка = не задано
+  tile_height: '',      // мм
+  tile_thickness: '',   // мм
+  grout_width: '',      // мм
   grout_color: '#cccccc'
 }
 ```
 
-### Walls array
+### Массив стен
 
 ```js
 walls: [
   {
     id: 'w1',
     name: 'Стена 1',
-    length: '',         // cm
-    height: '',         // cm
+    length: '',         // см
+    height: '',         // см
     wall_active: true,
     mosaic_active: true,
-    tile_overrides: {}, // only fields with non-empty values; absent or empty fields fall back to global tile
+    tile_overrides: {}, // только поля с непустыми значениями; отсутствующие или пустые поля берутся из глобальной плитки
     masks: [
       {
         id: 'm1',
-        name: '',       // 'дверь', 'лестница', etc.
-        x: '',          // cm from left edge of wall
-        y: '',          // cm from floor
-        width: '',      // cm
-        height: ''      // cm
+        name: '',       // 'дверь', 'лестница', и т.п.
+        x: '',          // см от левого края стены
+        y: '',          // см от пола
+        width: '',      // см
+        height: ''      // см
       }
     ]
   }
 ]
 ```
 
-### Corner overrides
+### Перекрытие углов
 
 ```js
 corners: {
-  // key: "wallId_left-wallId_right" (e.g. "w1-w2")
-  // value: "auto" | "wall_<id>" (id of the wall that overrides)
+  // ключ: "wallId_left-wallId_right" (например "w1-w2")
+  // значение: "auto" | "wall_<id>" (id стены, которая перекрывает)
   "w1-w2": "auto"
 }
 ```
 
-### Snapshot
+### Снимок
 
-`getSnapshot()` includes `tile`, `walls`, `corners`. All three are persisted to IndexedDB and included in undo/redo history.
+`getSnapshot()` включает `tile`, `walls`, `corners`. Все три сохраняются в IndexedDB и входят в историю undo/redo.
 
-## Component Structure
+## Компонентная структура
 
 ```
 src/components/room/
-  RoomTab.jsx          — scrollable page container
-  TileForm.jsx         — global tile params form
-  WallCard.jsx         — single wall card (fields + masks + tile_overrides)
-  MaskCard.jsx         — single mask row inside WallCard
-  CornersSection.jsx   — corner overlap settings
-  SummarySection.jsx   — per-wall tile count + totals
+  RoomTab.jsx          — прокручиваемый контейнер страницы
+  TileForm.jsx         — форма глобальных параметров плитки
+  WallCard.jsx         — карточка одной стены (поля + маски + tile_overrides)
+  MaskCard.jsx         — строка маски внутри WallCard
+  CornersSection.jsx   — настройка перекрытия углов
+  SummarySection.jsx   — количество плиток на стену + итоги
 
 src/utils/
-  roomGeometry.js      — pure calculation function (no React, no store)
+  roomGeometry.js      — чистая функция расчёта (без React, без стора)
 ```
 
-### Page order (top to bottom)
+### Порядок на странице (сверху вниз)
 
-1. `TileForm` — global tile params + "Add wall" button
-2. List of `WallCard` — one per wall, in order added
-3. `CornersSection` — only shown when walls ≥ 2
-4. `SummarySection` — always at bottom
+1. `TileForm` — глобальные параметры плитки + кнопка «Добавить стену»
+2. Список `WallCard` — по одной на каждую стену, в порядке добавления
+3. `CornersSection` — показывается только при количестве стен ≥ 2
+4. `SummarySection` — всегда снизу
 
-### WallCard contents
+### Содержимое WallCard
 
-- Editable name + `wall_active` / `mosaic_active` toggles
-- `length` and `height` fields (cm)
-- "Override tile" button → expands inline mini-form with same fields as TileForm (only filled fields override)
-- List of `MaskCard` + "Add mask" button
-- Delete wall button
+- Редактируемое название + переключатели `wall_active` / `mosaic_active`
+- Поля `length` и `height` (см)
+- Кнопка «Переопределить плитку» → разворачивается мини-форма с теми же полями, что у TileForm (только заполненные поля перекрывают глобальную плитку)
+- Список `MaskCard` + кнопка «Добавить маску»
+- Кнопка удаления стены
 
-### MaskCard contents
+### Содержимое MaskCard
 
-Single row: name, x, y, width, height (all cm), delete button.
+Одна строка: название, x, y, ширина, высота (всё в см), кнопка удаления.
 
 ### CornersSection
 
-One row per corner: label "Угол между Стеной N и Стеной M" + dropdown: "Автоматически / Стена N перекрывает / Стена M перекрывает".
+По одной строке на угол: подпись «Угол между Стеной N и Стеной M» + выпадающий список: «Автоматически / Стена N перекрывает / Стена M перекрывает».
 
 ### SummarySection
 
-Table: wall name | columns | rows | tiles. Last row: totals. Missing data → dash.
+Таблица: название стены | колонки | ряды | плитки. Последняя строка: итоги. Если данных нет → прочерк.
 
-## Grid Calculation (roomGeometry.js)
+## Расчёт сетки (roomGeometry.js)
 
-Pure function: `calculateGrid(tile, walls, corners) → WallResult[]`
+Чистая функция: `calculateGrid(tile, walls, corners) → WallResult[]`
 
-### Per active wall with mosaic_active = true:
+### Для каждой активной стены с mosaic_active = true:
 
-1. **Resolve effective tile params** — merge global `tile` with wall's `tile_overrides`.
+1. **Определить эффективные параметры плитки** — объединить глобальный `tile` с `tile_overrides` стены.
 
-2. **Determine neighbors** — left neighbor = previous wall in array (wraps: wall[0]'s left neighbor is wall[n-1]). Right neighbor = next wall (wraps).
+2. **Определить соседей** — левый сосед = предыдущая стена в массиве (с переносом: левый сосед wall[0] — это wall[n-1]). Правый сосед = следующая стена (с переносом).
 
-3. **Determine overlap per corner** using `corners` map:
-   - `"auto"` → thicker tile_thickness overrides thinner; equal → smaller wall index overrides
-   - `"wall_<id>"` → that wall overrides
-   - No overlap if neighbor has `tile_thickness = 0`, `mosaic_active = false`, or `wall_active = false`
+3. **Определить перекрытие углов** через карту `corners`:
+   - `"auto"` → более толстая плитка перекрывает более тонкую; при равной — побеждает меньший индекс
+   - `"wall_<id>"` → перекрывает указанная стена
+   - Нет перекрытия, если у соседа `tile_thickness = 0`, `mosaic_active = false` или `wall_active = false`
 
-4. **Grid width** (convert cm → mm with ×10):
+4. **Ширина сетки** (перевод см → мм умножением на 10):
    ```
    grid_width_mm = length_cm × 10
-     − left_neighbor.tile_thickness_mm  (if left neighbor overrides current wall)
-     − right_neighbor.tile_thickness_mm (if right neighbor overrides current wall)
+     − tile_thickness_mm левого соседа  (если левый сосед перекрывает текущую стену)
+     − tile_thickness_mm правого соседа (если правый сосед перекрывает текущую стену)
    ```
 
-5. **Grid dimensions:**
+5. **Размеры сетки:**
    ```
-   tw = effective tile_width_mm
-   th = effective tile_height_mm
-   gw = effective grout_width_mm
+   tw = tile_width_mm (эффективная)
+   th = tile_height_mm (эффективная)
+   gw = grout_width_mm (эффективная)
    grid_height_mm = height_cm × 10
 
    columns = floor((grid_width_mm  + gw) / (tw + gw))
@@ -137,7 +137,7 @@ Pure function: `calculateGrid(tile, walls, corners) → WallResult[]`
    total_before_masks = columns × rows
    ```
 
-6. **Subtract masked tiles** — for each mask, count tiles fully inside it:
+6. **Вычесть замаскированные плитки** — для каждой маски подсчитать плитки, полностью внутри неё:
    ```
    step_x = tw + gw
    step_y = th + gw
@@ -151,20 +151,20 @@ Pure function: `calculateGrid(tile, walls, corners) → WallResult[]`
 
    masked = max(0, col_end − col_start) × max(0, row_end − row_start)
    ```
-   Total masked = sum across all masks (non-overlapping assumed).
+   Итого замаскировано = сумма по всем маскам (без наложений).
 
-7. **Final count:** `total = total_before_masks − total_masked`
+7. **Итоговый счёт:** `total = total_before_masks − total_masked`
 
-8. **Limits** (checked against `total_before_masks`):
+8. **Лимиты** (проверяются по `total_before_masks`):
    - > 25 000 → `warning: true`
    - > 75 000 → `blocked: true`
 
-### Return type per wall:
+### Тип возврата на стену:
 
 ```js
 {
   wallId,
-  grid_width_cm,   // for display
+  grid_width_cm,   // для отображения
   columns,
   rows,
   total_before_masks,
@@ -175,25 +175,25 @@ Pure function: `calculateGrid(tile, walls, corners) → WallResult[]`
 }
 ```
 
-Returns `null` for a wall if required fields are missing or wall/mosaic is inactive.
+Возвращает `null` для стены, если обязательные поля не заполнены или стена/мозаика неактивна.
 
-## UX Behaviour
+## UX-поведение
 
-**Empty fields:** not an error — grid result for that wall shows as dash in summary until all required fields are filled.
+**Пустые поля:** не ошибка — результат сетки для этой стены показывается как прочерк в итоге, пока не заполнены все обязательные поля.
 
-**Warning (> 25 000):** yellow banner inside WallCard: "⚠ На стене X плиток — на мобильных может тормозить"
+**Предупреждение (> 25 000):** жёлтый баннер внутри WallCard: «⚠ На стене X плиток — на мобильных может тормозить»
 
-**Blocked (> 75 000):** red banner inside WallCard: "✕ Слишком много плиток. Увеличь размер плитки или уменьши стену." Data is still saved; no hard lock on input.
+**Блокировка (> 75 000):** красный баннер внутри WallCard: «✕ Слишком много плиток. Увеличь размер плитки или уменьши стену.» Данные всё равно сохраняются; жёсткой блокировки ввода нет.
 
-**Default state:** no walls, no tile data. User starts by filling tile params and adding walls.
+**Начальное состояние:** нет стен, нет данных плитки. Пользователь начинает с заполнения параметров плитки и добавления стен.
 
-**Undo/Redo:** snapshot is pushed on field blur (when user leaves a field), not on every keystroke — avoids flooding history with intermediate states. Uses existing historyStore + buttons already in the UI.
+**Undo/Redo:** снимок пушится при потере фокуса поля (когда пользователь уходит из поля), а не при каждом нажатии клавиши — чтобы не засорять историю промежуточными состояниями.
 
-**Persistence:** automatic via existing persistence.js — no additional work needed.
+**Сохранение:** автоматически через существующий persistence.js — дополнительной работы не нужно.
 
-## Out of Scope for Stage 2
+## Вне области этапа 2
 
-- 3D rendering of any kind
-- Photo assignment to walls
-- Pixelization
-- Export
+- Любой 3D-рендеринг
+- Привязка фотографий к стенам
+- Пикселизация
+- Экспорт
