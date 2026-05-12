@@ -13,7 +13,6 @@ export default function MaskCard({ wallId, mask }) {
 
   return (
     <div style={s.card}>
-      {/* Строка с названием и крестиком */}
       <div style={s.topRow}>
         <input
           style={s.nameInput}
@@ -25,7 +24,6 @@ export default function MaskCard({ wallId, mask }) {
           Удалить
         </button>
       </div>
-      {/* Строка с координатами */}
       <div style={s.coordRow}>
         {MASK_FIELDS.map(({ key, label, unit }) => (
           <div key={key} style={s.fieldWrap}>
@@ -42,6 +40,18 @@ export default function MaskCard({ wallId, mask }) {
             <span style={s.unit}>{unit}</span>
           </div>
         ))}
+        <div style={s.fieldWrap}>
+          <span style={s.fieldLabel}>Цвет</span>
+          <label style={s.colorWrap}>
+            <span style={{ ...s.colorDot, background: mask.color || '#888888' }} />
+            <input
+              type="color"
+              value={mask.color || '#888888'}
+              onChange={(e) => updateMask(wallId, mask.id, 'color', e.target.value)}
+              style={s.colorInput}
+            />
+          </label>
+        </div>
       </div>
     </div>
   )
@@ -57,4 +67,7 @@ const s = {
   fieldLabel: { fontSize: 11, color: '#64748b', minWidth: 12 },
   numInput:   { width: 54, padding: '4px 5px', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 5, color: '#f1f5f9', fontSize: 12, outline: 'none' },
   unit:       { fontSize: 11, color: '#475569' },
+  colorWrap:  { display: 'flex', alignItems: 'center', cursor: 'pointer' },
+  colorDot:   { width: 20, height: 20, borderRadius: '50%', border: '1px solid rgba(255,255,255,0.15)', display: 'block' },
+  colorInput: { position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' },
 }
