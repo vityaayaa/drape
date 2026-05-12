@@ -17,8 +17,6 @@ export default function PixelizerTab() {
   const touchRef = useRef({ lastDist: null })
   const viewportH = typeof window !== 'undefined' ? window.innerHeight : 700
 
-  const canvasScale = computeScale(walls, viewportH) * zoom
-
   // Загружаем фотографии в кеш при изменении photoSettings
   useEffect(() => {
     const settings = pixelizer.photoSettings
