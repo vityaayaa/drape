@@ -8,6 +8,8 @@ export default function SummarySection({ results }) {
 
   const activeResults = results.filter(Boolean)
   const totalTiles = activeResults.reduce((sum, r) => sum + r.total, 0)
+  const maxColumns = activeResults.length > 0 ? Math.max(...activeResults.map(r => r.columns)) : 0
+  const maxRows    = activeResults.length > 0 ? Math.max(...activeResults.map(r => r.rows))    : 0
 
   return (
     <div style={s.block}>
@@ -40,8 +42,8 @@ export default function SummarySection({ results }) {
           <tfoot>
             <tr style={s.footRow}>
               <td style={s.td}>Итого</td>
-              <td style={s.tdNum}>—</td>
-              <td style={s.tdNum}>—</td>
+              <td style={s.tdNum}>{maxColumns > 0 ? maxColumns : '—'}</td>
+              <td style={s.tdNum}>{maxRows > 0 ? maxRows : '—'}</td>
               <td style={{ ...s.tdNum, fontWeight: 700, color: '#a78bfa' }}>{totalTiles.toLocaleString()}</td>
             </tr>
           </tfoot>
