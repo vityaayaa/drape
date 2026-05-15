@@ -1,5 +1,5 @@
 // src/components/pixelizer/PhotoCard.jsx
-export default function PhotoCard({ group, thumbUrl, onOpacityChange, onEdit }) {
+export default function PhotoCard({ group, thumbUrl, onOpacityChange, onEdit, onDelete }) {
   const { photoId, walls, settings } = group
   const opacity = settings?.opacity ?? 1.0
   const wallNames = walls.map(w => w.name).join(', ')
@@ -31,13 +31,23 @@ export default function PhotoCard({ group, thumbUrl, onOpacityChange, onEdit }) 
           />
         </div>
 
-        {/* Edit button */}
-        <button style={s.editBtn} onClick={() => onEdit(photoId)} title="Редактировать">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
+        {/* Buttons */}
+        <div style={s.btns}>
+          <button style={s.iconBtn} onClick={() => onEdit(photoId)} title="Редактировать">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button style={{ ...s.iconBtn, ...s.deleteBtn }} onClick={() => onDelete(photoId)} title="Удалить фото">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6"/>
+              <path d="M19 6l-1 14H6L5 6"/>
+              <path d="M10 11v6M14 11v6"/>
+              <path d="M9 6V4h6v2"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -67,7 +77,8 @@ const s = {
   opacityLabel: { fontSize: 11, color: '#475569' },
   opacityValue:  { fontSize: 11, color: '#64748b', fontVariantNumeric: 'tabular-nums' },
   slider: { width: '100%', accentColor: '#818cf8', cursor: 'pointer' },
-  editBtn: {
+  btns: { display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0, alignSelf: 'center' },
+  iconBtn: {
     width: 32, height: 32,
     background: 'rgba(255,255,255,0.06)',
     border: '1px solid rgba(255,255,255,0.09)',
@@ -75,7 +86,9 @@ const s = {
     color: '#64748b',
     cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-    alignSelf: 'center',
+  },
+  deleteBtn: {
+    color: 'rgba(248,113,113,0.7)',
+    border: '1px solid rgba(248,113,113,0.15)',
   },
 }
