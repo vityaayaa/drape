@@ -8,6 +8,13 @@ function parseNum(val) {
   return isNaN(n) ? null : n
 }
 
+function getCornerOverlap(corners, key) {
+  const val = corners[key]
+  if (val === undefined || val === null) return 'auto'
+  if (typeof val === 'string') return val
+  return val.overlap ?? 'auto'
+}
+
 function effectiveTile(globalTile, overrides) {
   const merged = { ...globalTile }
   for (const key of Object.keys(overrides)) {
@@ -19,7 +26,7 @@ function effectiveTile(globalTile, overrides) {
 }
 
 function getCornerWinner(leftWall, rightWall, cornerKey, corners, walls, globalTile) {
-  const setting = corners[cornerKey] ?? 'auto'
+  const setting = getCornerOverlap(corners, cornerKey)
   if (setting !== 'auto') {
     // значение — это id стены-победителя
     return setting

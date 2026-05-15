@@ -100,3 +100,19 @@ describe('calculateGrid — лимиты', () => {
     expect(r.blocked).toBe(false)
   })
 })
+
+describe('calculateGrid — corners object format', () => {
+  it('handles { overlap, angle } format identically to plain string', () => {
+    const t = { tile_width: '20', tile_height: '20', tile_thickness: '5', grout_width: '2', grout_color: '#ccc' }
+    const walls = [
+      { id: 'w1', length: '300', height: '250', wall_active: true, mosaic_active: true, tile_overrides: {}, masks: [] },
+      { id: 'w2', length: '200', height: '250', wall_active: true, mosaic_active: true, tile_overrides: {}, masks: [] },
+    ]
+    const cornersString = { 'w1-w2': 'w2', 'w2-w1': 'auto' }
+    const cornersObject = { 'w1-w2': { overlap: 'w2', angle: 90 }, 'w2-w1': { overlap: 'auto', angle: 90 } }
+    const rStr = calculateGrid(t, walls, cornersString)
+    const rObj = calculateGrid(t, walls, cornersObject)
+    expect(rObj[0].columns).toBe(rStr[0].columns)
+    expect(rObj[1].columns).toBe(rStr[1].columns)
+  })
+})
