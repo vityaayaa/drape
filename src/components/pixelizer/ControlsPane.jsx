@@ -4,7 +4,7 @@ import ViewModeControl from './ViewModeControl.jsx'
 
 export default function ControlsPane({
   uiMode, pixelizerMode, hasPhotos, photoGroups, thumbCache,
-  eyeMode, onEyeMode, onAddPhoto, onOpacityChange, onEditPhoto,
+  eyeMode, onEyeMode, onAddPhoto, onOpacityChange, onEditPhoto, onDeletePhoto,
   pixelizer, walls, onPhotoSettingsChange, activePhotoId,
 }) {
   if (uiMode === 'transform') {
@@ -41,6 +41,7 @@ export default function ControlsPane({
           thumbUrl={thumbCache.get(group.photoId)}
           onOpacityChange={onOpacityChange}
           onEdit={onEditPhoto}
+          onDelete={onDeletePhoto}
         />
       ))}
 
@@ -64,7 +65,6 @@ export default function ControlsPane({
 function EmptyPhotos({ onAddPhoto }) {
   return (
     <div style={s.empty}>
-      {/* Wall illustration SVG */}
       <svg width="64" height="48" viewBox="0 0 64 48" fill="none" style={{ marginBottom: 14, opacity: 0.3 }}>
         <rect x="2" y="6" width="18" height="40" rx="2" stroke="#818cf8" strokeWidth="1.5"/>
         <rect x="24" y="14" width="16" height="32" rx="2" stroke="#818cf8" strokeWidth="1.5"/>
@@ -115,10 +115,38 @@ function TransformPane({ activePhotoId, pixelizer, walls, onPhotoSettingsChange 
             type="range" min="0" max="1" step="0.05"
             value={ps.opacity}
             onChange={e => update('opacity', parseFloat(e.target.value))}
-            style={{ width: '100%', accentColor: '#818cf8', marginTop: 6 }}
+            style={s.rangeInput}
           />
           <span style={s.fieldValue}>{Math.round(ps.opacity * 100)}%</span>
         </div>
+      </div>
+
+      <div style={s.sectionHeader}>
+        <span style={s.sectionTitle}>Коррекция</span>
+      </div>
+
+      <div style={s.correctionGrid}>
+        <RangeField
+          label="Яркость"
+          value={ps.brightness ?? 1}
+          min={0.5} max={2} step={0.05}
+          display={v => `${Math.round(v * 100)}%`}
+          onChange={v => update('brightness', v)}
+        />
+        <RangeField
+          label="Контраст"
+          value={ps.contrast ?? 1}
+          min={0.5} max={2} step={0.05}
+          display={v => `${Math.round(v * 100)}%`}
+          onChange={v => update('contrast', v)}
+        />
+        <RangeField
+          label="Насыщенность"
+          value={ps.saturation ?? 1}
+          min={0} max={3} step={0.05}
+          display={v => `${Math.round(v * 100)}%`}
+          onChange={v => update('saturation', v)}
+        />
       </div>
 
       <p style={s.gestureHint}>
@@ -143,6 +171,23 @@ function Field({ label, value, step, min, max, decimals = 0, onChange }) {
           if (!isNaN(v)) onChange(v)
         }}
         style={s.numInput}
+      />
+    </div>
+  )
+}
+
+function RangeField({ label, value, min, max, step, display, onChange }) {
+  return (
+    <div style={s.fieldGroup}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <label style={s.fieldLabel}>{label}</label>
+        <span style={s.fieldValue}>{display(value)}</span>
+      </div>
+      <input
+        type="range" min={min} max={max} step={step}
+        value={value}
+        onChange={e => onChange(parseFloat(e.target.value))}
+        style={s.rangeInput}
       />
     </div>
   )
@@ -183,10 +228,11 @@ const s = {
     cursor: 'pointer',
   },
   transformGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0 16px 12px' },
+  correctionGrid: { display: 'flex', flexDirection: 'column', gap: 10, padding: '0 16px 12px' },
   transformEmpty: { padding: 24, color: '#475569', fontSize: 14, textAlign: 'center' },
   fieldGroup: { display: 'flex', flexDirection: 'column' },
   fieldLabel: { fontSize: 11, color: '#475569', marginBottom: 4 },
-  fieldValue: { fontSize: 11, color: '#64748b', marginTop: 2, alignSelf: 'flex-end' },
+  fieldValue: { fontSize: 11, color: '#64748b', marginTop: 2 },
   numInput: {
     padding: '8px 10px',
     background: 'rgba(0,0,0,0.30)',
@@ -196,5 +242,6 @@ const s = {
     fontSize: 13,
     outline: 'none',
   },
+  rangeInput: { width: '100%', accentColor: '#818cf8', marginTop: 6, cursor: 'pointer' },
   gestureHint: { fontSize: 11, color: '#334155', textAlign: 'center', padding: '0 16px', lineHeight: 1.5 },
 }
