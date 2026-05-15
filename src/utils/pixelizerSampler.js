@@ -23,16 +23,17 @@ export function averageColor(pixels, x, y, w, h, imageWidth) {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }
 
-// Вычисляет цвет каждой плитки из зоны фото на временном canvas.
-// photoBlob: Blob из IndexedDB
-// photoSettings: { offsetX_mm, offsetY_mm, scale, opacity }
-// tileGrid: { columns, rows, tileW_mm, tileH_mm, groutW_mm, masks }
-// canvasW, canvasH: размеры canvas стены в пикселях
-// canvasScale: px per mm
-// Возвращает Promise<{ 'col_row': '#hex' }>
-export async function sampleWallColors(photoBlob, photoSettings, tileGrid, canvasW, canvasH, canvasScale) {
+// sampleWallColors — вычисляет цвет каждой плитки из зоны фото.
+//
+// wallGroupOffsetX_mm: ширина стен слева от этой в группе (mm)
+// groupTotalWidth_mm: полная ширина группы (mm). null = одна стена.
+export async function sampleWallColors(
+  photoBlob, photoSettings, tileGrid,
+  canvasW, canvasH, canvasScale,
+  wallGroupOffsetX_mm = 0, groupTotalWidth_mm = null
+) {
   const { columns, rows, tileW_mm, tileH_mm, groutW_mm, masks } = tileGrid
-  const { offsetX_mm, offsetY_mm, scale, opacity } = photoSettings
+  const { offsetX_mm, offsetY_mm, scale, opacity, brightness = 1, contrast = 1, saturation = 1 } = photoSettings
 
   const canvas = document.createElement('canvas')
   canvas.width  = canvasW
@@ -40,13 +41,20 @@ export async function sampleWallColors(photoBlob, photoSettings, tileGrid, canva
   const ctx = canvas.getContext('2d')
 
   const img = await createImageBitmap(photoBlob)
-  const drawW = canvasW * scale
-  const drawH = img.height * (drawW / img.width)
-  const drawX = offsetX_mm * canvasScale
-  const drawY = offsetY_mm * canvasScale
 
-  ctx.globalAlpha = opacity
+  const wallWidthMm = canvasW / canvasScale
+  const totalW_mm = groupTotalWidth_mm != null ? groupTotalWidth_mm : wallWidthMm
+  const drawW = totalW_mm * canvasScale * scale
+  const drawH = img.height * (drawW / img.width)
+  const drawX = (-wallGroupOffsetX_mm + (offsetX_mm ?? 0)) * canvasScale
+  const drawY = canvasH - drawH - (offsetY_mm ?? 0) * canvasScale
+
+  ctx.globalAlpha = opacity ?? 1
+  if (brightness !== 1 || contrast !== 1 || saturation !== 1) {
+    ctx.filter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturation})`
+  }
   ctx.drawImage(img, drawX, drawY, drawW, drawH)
+  ctx.filter = 'none'
   ctx.globalAlpha = 1.0
 
   const { data: pixels } = ctx.getImageData(0, 0, canvasW, canvasH)
