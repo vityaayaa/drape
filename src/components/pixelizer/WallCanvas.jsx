@@ -8,8 +8,8 @@ export default function WallCanvas({
   wall, tile, corners, walls, pixelizer, canvasScale,
   renderParams,       // { useMosaic, hidePhoto, gridVisible }
   showBoundingBox,    // boolean
-  isSelectable,       // boolean — стена кликабельна (addPhoto режим)
-  isSelected,         // boolean — стена выбрана в addPhoto режиме
+  isSelectable,       // boolean
+  isSelected,         // boolean
   onTap,              // (wallId) => void
   photoCache,
 }) {
@@ -18,6 +18,18 @@ export default function WallCanvas({
   const settings = pixelizer.photoSettings[wall.id] ?? null
   const tileColors = pixelizer.tileColors[wall.id] ?? {}
   const { useMosaic = false, hidePhoto = false, gridVisible = false } = renderParams ?? {}
+
+  // Вычислить позицию стены в группе фото для spanning
+  const photoGroup = settings
+    ? walls.filter(w => pixelizer.photoSettings[w.id]?.photoId === settings.photoId)
+    : []
+  const wallIndexInGroup = photoGroup.findIndex(w => w.id === wall.id)
+  const wallGroupOffsetX_mm = photoGroup
+    .slice(0, wallIndexInGroup)
+    .reduce((sum, w) => sum + (parseFloat(w.length) || 0) * 10, 0)
+  const groupTotalWidth_mm = photoGroup.length > 0
+    ? photoGroup.reduce((sum, w) => sum + (parseFloat(w.length) || 0) * 10, 0)
+    : null
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -49,13 +61,24 @@ export default function WallCanvas({
     if (useMosaic && tileGrid.columns > 0) {
       drawWallMosaic(ctx, dims.width, dims.height, tileGrid, tileColors, canvasScale)
     } else {
-      drawWallPhoto(ctx, dims.width, dims.height, photo, ps, tileGrid, canvasScale, gridVisible, hidePhoto)
+      drawWallPhoto(
+        ctx, dims.width, dims.height,
+        photo, ps,
+        tileGrid, canvasScale,
+        gridVisible, hidePhoto,
+        wallGroupOffsetX_mm, groupTotalWidth_mm
+      )
     }
 
     if (showBoundingBox && photo && settings) {
-      drawBoundingBox(ctx, dims.width, dims.height, photo, settings, canvasScale)
+      drawBoundingBox(
+        ctx, dims.width, dims.height,
+        photo, settings, canvasScale,
+        wallGroupOffsetX_mm, groupTotalWidth_mm
+      )
     }
-  }, [wall, tile, corners, walls, pixelizer, canvasScale, renderParams, showBoundingBox, photoCache, dims.width, dims.height])
+  }, [wall, tile, corners, walls, pixelizer, canvasScale, renderParams, showBoundingBox, photoCache,
+      dims.width, dims.height, wallGroupOffsetX_mm, groupTotalWidth_mm])
 
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
