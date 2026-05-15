@@ -99,8 +99,8 @@ export function calculateGrid(globalTile, walls, corners) {
     }
 
     const gridHeightMm = height * 10
-    const columns = Math.floor((gridWidthMm + gw) / (tw + gw))
-    const rows = Math.floor((gridHeightMm + gw) / (th + gw))
+    const columns = Math.ceil((gridWidthMm + gw) / (tw + gw))
+    const rows = Math.ceil((gridHeightMm + gw) / (th + gw))
     const total_before_masks = columns * rows
 
     let total_masked = 0
