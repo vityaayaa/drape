@@ -1,7 +1,7 @@
 // src/components/pixelizer/PixelizerTab.jsx
 import { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import { useProjectStore } from '../../store/projectStore.js'
-import { loadPhoto, savePhoto } from '../../store/persistence.js'
+import { loadPhoto, savePhoto, deletePhoto } from '../../store/persistence.js'
 import { computeScale } from '../../utils/pixelizerGeometry.js'
 import { wallCanvasDimensions } from '../../utils/pixelizerGeometry.js'
 import { calculateGrid } from '../../utils/roomGeometry.js'
@@ -171,10 +171,13 @@ export default function PixelizerTab() {
     for (const wall of targets) {
       setPhotoSettings(wall.id, {
         photoId,
-        offsetX_mm: 0,
-        offsetY_mm: 0,
-        scale:      1.0,
-        opacity:    0.85,
+        offsetX_mm:  0,
+        offsetY_mm:  0,
+        scale:       1.0,
+        opacity:     0.85,
+        brightness:  1.0,
+        contrast:    1.0,
+        saturation:  1.0,
       })
     }
     setActivePhotoId(photoId)
@@ -197,6 +200,19 @@ export default function PixelizerTab() {
     }
     setActivePhotoId(null)
     setUiMode('navigate')
+  }
+
+  async function handleDeletePhoto(photoId) {
+    walls.forEach(w => {
+      if (pixelizer.photoSettings[w.id]?.photoId === photoId) {
+        setPhotoSettings(w.id, null)
+      }
+    })
+    if (activePhotoId === photoId) {
+      setActivePhotoId(null)
+      setUiMode('navigate')
+    }
+    await deletePhoto(photoId)
   }
 
   // Редактирование существующего фото
@@ -232,7 +248,15 @@ export default function PixelizerTab() {
         groutW_mm: parseFloat(tile.grout_width) || 0,
         masks:     wall.masks,
       }
-      const colors = await sampleWallColors(blob, ps, tileGrid, dims.width, dims.height, canvasScale)
+      const photoGroup = walls.filter(w => pixelizer.photoSettings[w.id]?.photoId === ps.photoId)
+      const wallIndexInGroup = photoGroup.findIndex(w => w.id === wall.id)
+      const wallGroupOffsetX_mm = photoGroup
+        .slice(0, wallIndexInGroup)
+        .reduce((sum, w) => sum + (parseFloat(w.length) || 0) * 10, 0)
+      const groupTotalWidth_mm = photoGroup
+        .reduce((sum, w) => sum + (parseFloat(w.length) || 0) * 10, 0)
+
+      const colors = await sampleWallColors(blob, ps, tileGrid, dims.width, dims.height, canvasScale, wallGroupOffsetX_mm, groupTotalWidth_mm)
       setTileColors(wall.id, colors)
     }
 
@@ -301,6 +325,7 @@ export default function PixelizerTab() {
             onAddPhoto={handleAddPhoto}
             onOpacityChange={handleOpacity}
             onEditPhoto={handleEditPhoto}
+            onDeletePhoto={handleDeletePhoto}
             pixelizer={pixelizer}
             walls={walls}
             onPhotoSettingsChange={setPhotoSettings}
