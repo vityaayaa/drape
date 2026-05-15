@@ -132,13 +132,20 @@ export const useProjectStore = create((set, get) => ({
     set((s) => ({ pixelizer: { ...s.pixelizer, visibleWalls: walls } })),
 
   setPhotoSettings: (wallId, settings) =>
-    set((s) => ({
-      pixelizer: {
-        ...s.pixelizer,
-        photoSettings: { ...s.pixelizer.photoSettings, [wallId]: settings },
-        tileColorsStale: { ...s.pixelizer.tileColorsStale, [wallId]: true },
-      },
-    })),
+    set((s) => {
+      const photoSettings   = { ...s.pixelizer.photoSettings }
+      const tileColors      = { ...s.pixelizer.tileColors }
+      const tileColorsStale = { ...s.pixelizer.tileColorsStale }
+      if (settings === null) {
+        delete photoSettings[wallId]
+        delete tileColors[wallId]
+        delete tileColorsStale[wallId]
+      } else {
+        photoSettings[wallId]   = settings
+        tileColorsStale[wallId] = true
+      }
+      return { pixelizer: { ...s.pixelizer, photoSettings, tileColors, tileColorsStale } }
+    }),
 
   setTileColors: (wallId, colors) =>
     set((s) => ({

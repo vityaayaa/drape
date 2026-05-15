@@ -2,25 +2,20 @@
 import { tileRect, maskRectPx, isFullyInsideMask } from './pixelizerGeometry.js'
 
 // Режим «Фото»: фото видно сквозь «окна» плиток, швы в цвете шва.
-// ctx: CanvasRenderingContext2D
-// W, H: размеры canvas
-// photo: HTMLImageElement | ImageBitmap | null
-// photoSettings: { offsetX_mm, offsetY_mm, scale, opacity }
-// tileGrid: { columns, rows, tileW_mm, tileH_mm, groutW_mm, masks, groutColor }
-// canvasScale: px/mm
-// gridVisible: boolean
-export function drawWallPhoto(ctx, W, H, photo, photoSettings, tileGrid, canvasScale, gridVisible) {
+// hidePhoto: показывать только сетку без фото (режим «Только сетка»)
+export function drawWallPhoto(ctx, W, H, photo, photoSettings, tileGrid, canvasScale, gridVisible, hidePhoto = false) {
   ctx.clearRect(0, 0, W, H)
   ctx.fillStyle = '#2a2a3a'
   ctx.fillRect(0, 0, W, H)
 
   const { columns, rows, tileW_mm, tileH_mm, groutW_mm, masks, groutColor } = tileGrid
+  const showPhoto = photo && !hidePhoto
 
   if (gridVisible && columns > 0 && rows > 0) {
     ctx.fillStyle = groutColor || '#cccccc'
     ctx.fillRect(0, 0, W, H)
 
-    ctx.globalAlpha = photo ? photoSettings.opacity : 1.0
+    ctx.globalAlpha = showPhoto ? photoSettings.opacity : 1.0
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < columns; col++) {
         if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm)) continue
@@ -29,7 +24,7 @@ export function drawWallPhoto(ctx, W, H, photo, photoSettings, tileGrid, canvasS
         ctx.beginPath()
         ctx.rect(r.x, r.y, r.w, r.h)
         ctx.clip()
-        if (photo) {
+        if (showPhoto) {
           const drawW = W * photoSettings.scale
           const drawH = photo.height * (drawW / photo.width)
           const drawX = photoSettings.offsetX_mm * canvasScale
@@ -43,7 +38,7 @@ export function drawWallPhoto(ctx, W, H, photo, photoSettings, tileGrid, canvasS
       }
     }
     ctx.globalAlpha = 1.0
-  } else if (photo) {
+  } else if (showPhoto) {
     ctx.globalAlpha = photoSettings.opacity
     const drawW = W * photoSettings.scale
     const drawH = photo.height * (drawW / photo.width)
@@ -52,6 +47,39 @@ export function drawWallPhoto(ctx, W, H, photo, photoSettings, tileGrid, canvasS
   }
 
   _drawMasks(ctx, masks, canvasScale)
+}
+
+// Bounding box поверх фото в режиме трансформации
+export function drawBoundingBox(ctx, W, H, photo, settings, canvasScale) {
+  if (!photo || !settings) return
+  const drawW = W * settings.scale
+  const drawH = photo.height * (drawW / photo.width)
+  const drawX = settings.offsetX_mm * canvasScale
+  const drawY = settings.offsetY_mm * canvasScale
+
+  ctx.save()
+  ctx.strokeStyle = 'rgba(129,140,248,0.92)'
+  ctx.lineWidth = 2
+  ctx.shadowColor = 'rgba(129,140,248,0.55)'
+  ctx.shadowBlur = 8
+  ctx.strokeRect(drawX, drawY, drawW, drawH)
+
+  const corners = [
+    [drawX, drawY],
+    [drawX + drawW, drawY],
+    [drawX, drawY + drawH],
+    [drawX + drawW, drawY + drawH],
+  ]
+  for (const [cx, cy] of corners) {
+    ctx.beginPath()
+    ctx.arc(cx, cy, 8, 0, Math.PI * 2)
+    ctx.fillStyle = 'rgba(255,255,255,0.93)'
+    ctx.shadowColor = 'rgba(129,140,248,0.65)'
+    ctx.shadowBlur = 10
+    ctx.fill()
+    ctx.shadowBlur = 0
+  }
+  ctx.restore()
 }
 
 // Режим «Мозаика»: каждый тайл залит вычисленным цветом, швы в цвете шва.

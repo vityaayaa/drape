@@ -9,13 +9,14 @@ import {
 } from './pixelizerGeometry.js'
 
 describe('computeScale', () => {
-  it('fits tallest wall to 75% of viewport height', () => {
+  it('fills availablePx with the tallest wall', () => {
     const walls = [
       { length: '300', height: '250' },
       { length: '200', height: '300' },
     ]
-    // maxHeight = 300 cm = 3000 mm; scale = (800 * 0.75) / 3000 = 0.2
-    expect(computeScale(walls, 800)).toBeCloseTo(0.2)
+    // maxHeight = 300 cm = 3000 mm; scale = availablePx / maxHeight
+    // caller passes pre-factored value, e.g. panoramaH * 0.85
+    expect(computeScale(walls, 600)).toBeCloseTo(0.2) // 600 / 3000 = 0.2
   })
 
   it('returns 1 when no walls have valid height', () => {

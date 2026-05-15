@@ -1,12 +1,13 @@
 // src/utils/pixelizerGeometry.js
 
-export function computeScale(walls, viewportHeight) {
+// availablePx: высота в пикселях, которую должна занять самая высокая стена
+export function computeScale(walls, availablePx) {
   const maxHeight = walls.reduce((max, w) => {
     const h = parseFloat(w.height)
     return isNaN(h) ? max : Math.max(max, h * 10)
   }, 0)
   if (maxHeight <= 0) return 1
-  return (viewportHeight * 0.75) / maxHeight
+  return availablePx / maxHeight
 }
 
 export function wallCanvasDimensions(wall, scale) {

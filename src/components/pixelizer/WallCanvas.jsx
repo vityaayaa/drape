@@ -2,16 +2,22 @@
 import { useRef, useEffect } from 'react'
 import { calculateGrid } from '../../utils/roomGeometry.js'
 import { wallCanvasDimensions } from '../../utils/pixelizerGeometry.js'
-import { drawWallPhoto, drawWallMosaic, drawWallPlaceholder } from '../../utils/pixelizerRenderer.js'
+import { drawWallPhoto, drawWallMosaic, drawWallPlaceholder, drawBoundingBox } from '../../utils/pixelizerRenderer.js'
 
-// photoCache: Map<photoId, ImageBitmap> — передаётся сверху, чтобы не загружать повторно
-export default function WallCanvas({ wall, tile, corners, walls, pixelizer, canvasScale, selected, onSelect, photoCache }) {
+export default function WallCanvas({
+  wall, tile, corners, walls, pixelizer, canvasScale,
+  renderParams,       // { useMosaic, hidePhoto, gridVisible }
+  showBoundingBox,    // boolean
+  isSelectable,       // boolean — стена кликабельна (addPhoto режим)
+  isSelected,         // boolean — стена выбрана в addPhoto режиме
+  onTap,              // (wallId) => void
+  photoCache,
+}) {
   const canvasRef = useRef(null)
   const dims = wallCanvasDimensions(wall, canvasScale)
   const settings = pixelizer.photoSettings[wall.id] ?? null
   const tileColors = pixelizer.tileColors[wall.id] ?? {}
-  const stale = pixelizer.tileColorsStale[wall.id] ?? false
-  const mode = pixelizer.mode
+  const { useMosaic = false, hidePhoto = false, gridVisible = false } = renderParams ?? {}
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -35,16 +41,21 @@ export default function WallCanvas({ wall, tile, corners, walls, pixelizer, canv
       groutW_mm: parseFloat(tile.grout_width) || 0,
       groutColor: tile.grout_color,
       masks: wall.masks,
-    } : null
+    } : { columns: 0, rows: 0, tileW_mm: 0, tileH_mm: 0, groutW_mm: 0, groutColor: '#ccc', masks: [] }
 
     const photo = settings ? (photoCache.get(settings.photoId) ?? null) : null
+    const ps = settings ?? { offsetX_mm: 0, offsetY_mm: 0, scale: 1, opacity: 1 }
 
-    if (mode === 'mosaic' && tileGrid) {
+    if (useMosaic && tileGrid.columns > 0) {
       drawWallMosaic(ctx, dims.width, dims.height, tileGrid, tileColors, canvasScale)
     } else {
-      drawWallPhoto(ctx, dims.width, dims.height, photo, settings ?? { offsetX_mm: 0, offsetY_mm: 0, scale: 1, opacity: 1 }, tileGrid ?? { columns: 0, rows: 0, tileW_mm: 0, tileH_mm: 0, groutW_mm: 0, groutColor: '#ccc', masks: [] }, canvasScale, pixelizer.gridVisible)
+      drawWallPhoto(ctx, dims.width, dims.height, photo, ps, tileGrid, canvasScale, gridVisible, hidePhoto)
     }
-  }, [wall, tile, corners, walls, pixelizer, canvasScale, mode, dims.width, dims.height, photoCache])
+
+    if (showBoundingBox && photo && settings) {
+      drawBoundingBox(ctx, dims.width, dims.height, photo, settings, canvasScale)
+    }
+  }, [wall, tile, corners, walls, pixelizer, canvasScale, renderParams, showBoundingBox, photoCache, dims.width, dims.height])
 
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -52,23 +63,37 @@ export default function WallCanvas({ wall, tile, corners, walls, pixelizer, canv
         ref={canvasRef}
         width={dims.width}
         height={dims.height}
-        onClick={onSelect}
+        onClick={isSelectable ? () => onTap?.(wall.id) : undefined}
         style={{
           display: 'block',
-          cursor: 'pointer',
-          outline: selected ? '2px solid #818cf8' : 'none',
+          cursor: isSelectable ? 'pointer' : 'default',
+          outline: isSelected ? '2px solid #818cf8' : 'none',
+          outlineOffset: '-2px',
           borderRadius: 2,
+          transition: 'outline 0.12s',
         }}
       />
-      <div style={s.wallLabel}>{wall.name}</div>
-      {stale && mode === 'mosaic' && (
-        <div style={s.staleHint}>обновить</div>
+      {isSelected && (
+        <div style={s.selectionOverlay} />
       )}
+      <div style={s.wallLabel}>{wall.name}</div>
     </div>
   )
 }
 
 const s = {
-  wallLabel: { position: 'absolute', bottom: 4, left: 0, right: 0, textAlign: 'center', fontSize: 10, color: '#64748b', pointerEvents: 'none' },
-  staleHint: { position: 'absolute', top: 4, right: 4, background: '#f59e0b', color: '#000', fontSize: 9, padding: '2px 5px', borderRadius: 4 },
+  selectionOverlay: {
+    position: 'absolute', inset: 0, borderRadius: 2,
+    background: 'rgba(129,140,248,0.13)',
+    pointerEvents: 'none',
+  },
+  wallLabel: {
+    position: 'absolute', bottom: -18, left: 0, right: 0,
+    textAlign: 'center',
+    fontSize: 10, fontWeight: 500,
+    color: 'rgba(255,255,255,0.28)',
+    letterSpacing: '0.05em',
+    textTransform: 'uppercase',
+    pointerEvents: 'none',
+  },
 }

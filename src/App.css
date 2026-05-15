@@ -85,3 +85,44 @@ body::before {
 .nav-tab:active {
   opacity: 0.6;
 }
+
+/* ─── Pixelizer animations ─── */
+
+@keyframes pulse-warn {
+  0%   { box-shadow: 0 0 0 0   rgba(245,158,11,0.55); border-color: rgba(245,158,11,0.45); }
+  60%  { box-shadow: 0 0 0 7px rgba(245,158,11,0);    border-color: rgba(245,158,11,0.70); }
+  100% { box-shadow: 0 0 0 0   rgba(245,158,11,0);    border-color: rgba(245,158,11,0.45); }
+}
+
+@keyframes toast-in {
+  from { transform: translateX(-50%) translateY(-110%); opacity: 0; }
+  to   { transform: translateX(-50%) translateY(0);    opacity: 1; }
+}
+@keyframes toast-out {
+  from { transform: translateX(-50%) translateY(0);    opacity: 1; }
+  to   { transform: translateX(-50%) translateY(-110%); opacity: 0; }
+}
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes eye-pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(0.86); }
+  75%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+.btn-stale {
+  background: rgba(245,158,11,0.14) !important;
+  border-color: rgba(245,158,11,0.45) !important;
+  color: #fbbf24 !important;
+  animation: pulse-warn 2s ease-out infinite;
+}
+
+.toast-enter { animation: toast-in  220ms cubic-bezier(0.16,1,0.3,1) forwards; }
+.toast-exit  { animation: toast-out 180ms ease-in             forwards; }
+.sheet-up    { animation: sheet-up  300ms cubic-bezier(0.16,1,0.3,1) forwards; }
+.eye-pop     { animation: eye-pop   220ms ease-out; }
