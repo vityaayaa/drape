@@ -27,35 +27,36 @@ export default function WallSelectSheet({ walls, selectedWallIds, onToggle, onSe
         </button>
       </div>
 
-      {/* Wall chips */}
-      <div style={s.chips}>
-        {walls.map(wall => {
-          const selected = selectedWallIds.includes(wall.id)
-          return (
-            <button
-              key={wall.id}
-              style={{ ...s.chip, ...(selected ? s.chipActive : {}) }}
-              onClick={() => onToggle(wall.id)}
-            >
-              {selected && (
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}>
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-              )}
-              {wall.name}
-            </button>
-          )
-        })}
+      {/* Scrollable area: chips + hint */}
+      <div style={s.scrollArea}>
+        <div style={s.chips}>
+          {walls.map(wall => {
+            const selected = selectedWallIds.includes(wall.id)
+            return (
+              <button
+                key={wall.id}
+                style={{ ...s.chip, ...(selected ? s.chipActive : {}) }}
+                onClick={() => onToggle(wall.id)}
+              >
+                {selected && (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 4 }}>
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                )}
+                {wall.name}
+              </button>
+            )
+          })}
+        </div>
+
+        <p style={s.hint}>
+          {hasSelection
+            ? `Выбрано стен: ${selectedWallIds.length}`
+            : 'Нажмите на стены в развёртке или выберите здесь'}
+        </p>
       </div>
 
-      {/* Hint */}
-      <p style={s.hint}>
-        {hasSelection
-          ? `Выбрано стен: ${selectedWallIds.length}`
-          : 'Нажмите на стены в развёртке или выберите здесь'}
-      </p>
-
-      {/* Actions */}
+      {/* Actions — всегда видны */}
       <div style={s.actions}>
         <button style={s.btnAll} onClick={onSelectAll}>Все стены</button>
         <button
@@ -81,13 +82,15 @@ const s = {
   sheet: {
     position: 'fixed',
     bottom: 0, left: 0, right: 0,
+    maxHeight: '75vh',
+    display: 'flex',
+    flexDirection: 'column',
     background: 'rgba(10,10,20,0.96)',
     backdropFilter: 'blur(24px) saturate(180%)',
     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
     borderTop: '1px solid rgba(255,255,255,0.09)',
     borderRadius: '20px 20px 0 0',
-    padding: '8px 16px',
-    paddingBottom: 'calc(16px + env(safe-area-inset-bottom, 0px))',
+    padding: '8px 16px 0',
     zIndex: 200,
   },
   handle: {
@@ -95,10 +98,12 @@ const s = {
     background: 'rgba(255,255,255,0.15)',
     borderRadius: 2,
     margin: '0 auto 16px',
+    flexShrink: 0,
   },
   titleRow: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     marginBottom: 14,
+    flexShrink: 0,
   },
   title: { fontSize: 15, fontWeight: 600, color: '#f1f5f9' },
   closeBtn: {
@@ -109,6 +114,12 @@ const s = {
     color: '#64748b',
     cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
+  },
+  scrollArea: {
+    flex: 1,
+    overflowY: 'auto',
+    WebkitOverflowScrolling: 'touch',
+    minHeight: 0,
   },
   chips: { display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
   chip: {
@@ -128,7 +139,13 @@ const s = {
     color: '#818cf8',
   },
   hint: { fontSize: 12, color: '#475569', marginBottom: 14, minHeight: 16 },
-  actions: { display: 'flex', gap: 8 },
+  actions: {
+    display: 'flex', gap: 8,
+    flexShrink: 0,
+    padding: '12px 0',
+    paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+    borderTop: '1px solid rgba(255,255,255,0.06)',
+  },
   btnAll: {
     padding: '0 16px', height: 42,
     background: 'rgba(255,255,255,0.06)',
