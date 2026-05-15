@@ -11,7 +11,7 @@ export default function ViewerTab() {
   const activeWalls = walls.filter(
     (w) => w.wall_active && parseFloat(w.length) > 0 && parseFloat(w.height) > 0,
   )
-  const { center } = computeWallPositions(activeWalls, corners)
+  const { positions, center } = computeWallPositions(activeWalls, corners)
 
   if (activeWalls.length === 0) {
     return (
@@ -27,9 +27,17 @@ export default function ViewerTab() {
   )
   const camDist = Math.max(maxDim * 1.8, 300)
 
+  // key пересоздаёт Canvas при изменении набора активных стен — иначе камера
+  // не обновляется (R3F применяет camera prop только при первом монтировании).
+  // frameloop="demand" останавливает рендер-цикл когда вкладка скрыта (display:none),
+  // иначе Three.js непрерывно работает в фоне и разряжает батарею.
+  const canvasKey = activeWalls.map((w) => w.id).join(',')
+
   return (
     <div style={s.container}>
       <Canvas
+        key={canvasKey}
+        frameloop="demand"
         camera={{
           position: [center[0], center[1] + camDist * 0.5, center[2] + camDist],
           fov: 60,
@@ -39,7 +47,7 @@ export default function ViewerTab() {
       >
         <ambientLight intensity={0.7} />
         <directionalLight position={[200, 400, 300]} intensity={0.8} />
-        <RoomScene />
+        <RoomScene positions={positions} />
         <OrbitControls
           target={center}
           enablePan

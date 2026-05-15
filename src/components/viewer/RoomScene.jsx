@@ -1,15 +1,10 @@
 import { useProjectStore } from '../../store/projectStore.js'
-import { computeWallPositions } from '../../utils/computeWallPositions.js'
 import WallMesh from './WallMesh.jsx'
 
-export default function RoomScene() {
+export default function RoomScene({ positions }) {
   const walls = useProjectStore((s) => s.walls)
-  const corners = useProjectStore((s) => s.corners)
   const tile = useProjectStore((s) => s.tile)
   const tileColors = useProjectStore((s) => s.pixelizer.tileColors)
-
-  const activeWalls = walls.filter((w) => w.wall_active)
-  const { positions } = computeWallPositions(activeWalls, corners)
 
   return (
     <>

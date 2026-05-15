@@ -42,8 +42,8 @@ export default function SummarySection({ results }) {
           <tfoot>
             <tr style={s.footRow}>
               <td style={s.td}>Итого</td>
-              <td style={s.tdNum}>{maxColumns > 0 ? maxColumns : '—'}</td>
-              <td style={s.tdNum}>{maxRows > 0 ? maxRows : '—'}</td>
+              <td style={{ ...s.tdNum, fontSize: 11, color: '#475569' }}>{maxColumns > 0 ? `макс. ${maxColumns}` : '—'}</td>
+              <td style={{ ...s.tdNum, fontSize: 11, color: '#475569' }}>{maxRows > 0 ? `макс. ${maxRows}` : '—'}</td>
               <td style={{ ...s.tdNum, fontWeight: 700, color: '#a78bfa' }}>{totalTiles.toLocaleString()}</td>
             </tr>
           </tfoot>
