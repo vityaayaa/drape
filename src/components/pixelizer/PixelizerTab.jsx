@@ -16,7 +16,7 @@ import Toast from './Toast.jsx'
 export default function PixelizerTab() {
   const {
     walls, tile, corners, pixelizer,
-    setPixelizerMode, setGridVisible, setPhotoSettings, setTileColors, setVisibleWalls,
+    setPixelizerMode, setGridVisible, setPhotoSettings, setTileColors,
   } = useProjectStore()
 
   // ── UI State Machine ──
@@ -191,12 +191,16 @@ export default function PixelizerTab() {
   }
 
   function handleTransformDelete() {
-    if (activePhotoId) {
+    const photoId = activePhotoId
+    if (photoId) {
       walls.forEach(w => {
-        if (pixelizer.photoSettings[w.id]?.photoId === activePhotoId) {
+        if (pixelizer.photoSettings[w.id]?.photoId === photoId) {
           setPhotoSettings(w.id, null)
         }
       })
+      deletePhoto(photoId)
+      setPhotoCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
+      setThumbCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
     }
     setActivePhotoId(null)
     setUiMode('navigate')
@@ -215,7 +219,7 @@ export default function PixelizerTab() {
     await deletePhoto(photoId)
     setPhotoCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
     setThumbCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
-  }, [walls, pixelizer.photoSettings, activePhotoId])
+  }, [walls, pixelizer.photoSettings, activePhotoId, setPhotoSettings])
 
   // Редактирование существующего фото
   function handleEditPhoto(photoId) {
