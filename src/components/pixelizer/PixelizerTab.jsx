@@ -202,7 +202,7 @@ export default function PixelizerTab() {
     setUiMode('navigate')
   }
 
-  async function handleDeletePhoto(photoId) {
+  const handleDeletePhoto = useCallback(async (photoId) => {
     walls.forEach(w => {
       if (pixelizer.photoSettings[w.id]?.photoId === photoId) {
         setPhotoSettings(w.id, null)
@@ -213,7 +213,9 @@ export default function PixelizerTab() {
       setUiMode('navigate')
     }
     await deletePhoto(photoId)
-  }
+    setPhotoCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
+    setThumbCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
+  }, [walls, pixelizer.photoSettings, activePhotoId])
 
   // Редактирование существующего фото
   function handleEditPhoto(photoId) {
