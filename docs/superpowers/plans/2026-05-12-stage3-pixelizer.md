@@ -1,4 +1,4 @@
-# Stage 4 — Pixelizer: план реализации
+# Stage 3 — Pixelizer: план реализации
 
 > **Для агентов:** ОБЯЗАТЕЛЬНЫЙ СУБ-СКИЛЛ: используй superpowers:subagent-driven-development (рекомендуется) или superpowers:executing-plans для реализации шаг за шагом. Шаги отмечаются чекбоксами (`- [ ]`).
 
