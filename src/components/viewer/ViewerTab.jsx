@@ -1,8 +1,17 @@
+import { useEffect } from 'react'
 import { useProjectStore } from '../../store/projectStore.js'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { computeWallPositions } from '../../utils/computeWallPositions.js'
 import RoomScene from './RoomScene.jsx'
+
+// Вызывает один принудительный рендер сразу при mount —
+// нужно потому что frameloop="demand" не рендерит автоматически.
+function InitialRender() {
+  const { invalidate } = useThree()
+  useEffect(() => { invalidate() }, [])
+  return null
+}
 
 export default function ViewerTab() {
   const walls = useProjectStore((s) => s.walls)
@@ -21,11 +30,10 @@ export default function ViewerTab() {
     )
   }
 
-  const maxDim = activeWalls.reduce(
-    (m, w) => Math.max(m, parseFloat(w.length) || 0, parseFloat(w.height) || 0),
-    0,
-  )
-  const camDist = Math.max(maxDim * 1.8, 300)
+  const totalSpan = activeWalls.reduce((m, w) => m + (parseFloat(w.length) || 0), 0)
+  const maxHeight = activeWalls.reduce((m, w) => Math.max(m, parseFloat(w.height) || 0), 0)
+  // Берём максимум из суммарного периметра и максимальной высоты — комната видна целиком
+  const camDist = Math.max(totalSpan * 0.9, maxHeight * 2.5, 400)
 
   // key пересоздаёт Canvas при изменении набора активных стен — иначе камера
   // не обновляется (R3F применяет camera prop только при первом монтировании).
@@ -39,20 +47,21 @@ export default function ViewerTab() {
         key={canvasKey}
         frameloop="demand"
         camera={{
-          position: [center[0], center[1] + camDist * 0.5, center[2] + camDist],
-          fov: 60,
+          position: [center[0], center[1] + camDist * 0.55, center[2] + camDist],
+          fov: 55,
           near: 1,
-          far: camDist * 10,
+          far: camDist * 12,
         }}
       >
         <ambientLight intensity={0.7} />
         <directionalLight position={[200, 400, 300]} intensity={0.8} />
+        <InitialRender />
         <RoomScene positions={positions} />
         <OrbitControls
           target={center}
           enablePan
           minDistance={10}
-          maxDistance={camDist * 4}
+          maxDistance={camDist * 5}
         />
       </Canvas>
     </div>
