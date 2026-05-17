@@ -12,14 +12,14 @@ describe('calculateGrid — базовый расчёт', () => {
   })
 
   it('считает колонки и ряды правильно', () => {
-    // grid_width=300cm=3000mm, columns=floor((3000+2)/(20+2))=floor(136.45)=136
-    // rows=floor((2500+2)/(20+2))=floor(113.7)=113
+    // grid_width=300cm=3000mm, columns=ceil((3000+2)/(20+2))=ceil(136.45)=137
+    // rows=ceil((2500+2)/(20+2))=ceil(113.72)=114
     const walls = [{ id: 'w1', length: '300', height: '250', wall_active: true, mosaic_active: true, tile_overrides: {}, masks: [] }]
     const r = calculateGrid(tile, walls, {})[0]
-    expect(r.columns).toBe(136)
-    expect(r.rows).toBe(113)
-    expect(r.total_before_masks).toBe(136 * 113)
-    expect(r.total).toBe(136 * 113)
+    expect(r.columns).toBe(137)
+    expect(r.rows).toBe(114)
+    expect(r.total_before_masks).toBe(137 * 114)
+    expect(r.total).toBe(137 * 114)
   })
 
   it('возвращает null если wall_active=false', () => {
@@ -35,10 +35,10 @@ describe('calculateGrid — базовый расчёт', () => {
 
 describe('calculateGrid — tile_overrides', () => {
   it('переопределение tile_width влияет на расчёт', () => {
-    // tile_width=40 → columns=floor((3000+2)/(40+2))=floor(71.47)=71
+    // tile_width=40 → columns=ceil((3000+2)/(40+2))=ceil(71.47)=72
     const walls = [{ id: 'w1', length: '300', height: '250', wall_active: true, mosaic_active: true, tile_overrides: { tile_width: '40' }, masks: [] }]
     const r = calculateGrid(tile, walls, {})[0]
-    expect(r.columns).toBe(71)
+    expect(r.columns).toBe(72)
   })
 })
 
@@ -62,10 +62,10 @@ describe('calculateGrid — углы (перекрытие)', () => {
       { id: 'w2', length: '300', height: '250', wall_active: true, mosaic_active: true, tile_overrides: {}, masks: [] },
     ]
     // Принудительно w2 перекрывает угол w1-w2 → w1 теряет справа 10мм
-    // w1.grid_width = 2000-10=1990мм → columns=floor((1990+2)/22)=90
+    // w1.grid_width = 2000-10=1990мм → columns=ceil((1990+2)/22)=ceil(90.54)=91
     const corners = { 'w1-w2': 'w2' }
     const r = calculateGrid(thickTile, walls, corners)[0]
-    expect(r.columns).toBe(Math.floor((1990 + 2) / 22))
+    expect(r.columns).toBe(Math.ceil((1990 + 2) / 22))
   })
 })
 
@@ -98,5 +98,21 @@ describe('calculateGrid — лимиты', () => {
     const r = calculateGrid(tile, walls, {})[0]
     expect(r.warning).toBe(false)
     expect(r.blocked).toBe(false)
+  })
+})
+
+describe('calculateGrid — corners object format', () => {
+  it('handles { overlap, angle } format identically to plain string', () => {
+    const t = { tile_width: '20', tile_height: '20', tile_thickness: '5', grout_width: '2', grout_color: '#ccc' }
+    const walls = [
+      { id: 'w1', length: '300', height: '250', wall_active: true, mosaic_active: true, tile_overrides: {}, masks: [] },
+      { id: 'w2', length: '200', height: '250', wall_active: true, mosaic_active: true, tile_overrides: {}, masks: [] },
+    ]
+    const cornersString = { 'w1-w2': 'w2', 'w2-w1': 'auto' }
+    const cornersObject = { 'w1-w2': { overlap: 'w2', angle: 90 }, 'w2-w1': { overlap: 'auto', angle: 90 } }
+    const rStr = calculateGrid(t, walls, cornersString)
+    const rObj = calculateGrid(t, walls, cornersObject)
+    expect(rObj[0].columns).toBe(rStr[0].columns)
+    expect(rObj[1].columns).toBe(rStr[1].columns)
   })
 })

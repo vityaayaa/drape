@@ -39,3 +39,18 @@ export async function loadAll() {
     useProjectStore.getState().setActiveTab(activeTab)
   }
 }
+
+export async function savePhoto(photoId, blob) {
+  if (!db) return
+  await db.put('photos', blob, photoId)
+}
+
+export async function loadPhoto(photoId) {
+  if (!db) return null
+  return db.get('photos', photoId)
+}
+
+export async function deletePhoto(photoId) {
+  if (!db) return
+  await db.delete('photos', photoId)
+}
