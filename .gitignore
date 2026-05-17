@@ -3,3 +3,9 @@ dist/
 .vite/
 .env
 .env.local
+
+# dev tools
+repomix-output.xml
+test_ui.cjs
+test_ui2.cjs
+test_ui.py
