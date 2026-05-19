@@ -688,9 +688,44 @@ ISO вид с угла: `position: [cx + camDist*0.7, maxHeight/2 + camDist*0.5,
 
 ---
 
-## Сессия 2.3 — [ОЖИДАЕТ ВЫПОЛНЕНИЯ]
+## Сессия 2.3 — Комната Полировка ✅
 
-*Результаты будут записаны сюда после завершения сессии.*
+### CSS-переменные
+
+Добавлены в `src/App.css` блок `:root`:
+```
+--bg, --surface-1, --surface-2, --surface-overlay
+--accent, --accent-light, --accent-glow
+--text-primary, --text-secondary, --text-hint, --text-disabled
+--border, --border-strong, --border-focus
+--error, --success, --warning
+--radius-card, --radius-btn, --radius-input
+```
+
+### Изменённые файлы
+- `src/App.css` — З1: `:root` CSS-переменные, З7: gap + stub-вкладки
+- `src/App.jsx` — З7: иконки Lucide в навбаре (LayoutGrid / Camera / Box / PenLine / Grid3x3)
+- `src/components/room/TileForm.jsx` — З3: maxWidth убран с colorLabel, З8: валидация > 0
+- `src/components/room/WallCard.jsx` — З8: валидация > 0, З9: scrollIntoView после addMask
+
+### Что НЕ выполнялось (уже было в 1.2)
+- З2 CornersSection layout — выполнено в сессии 1.2
+- З4 WallCard override btn — выполнено в сессии 1.2
+- З5 SummarySection grid — выполнено в сессии 1.2
+- З6 WallCard удаление с confirm — выполнено в сессии 1.2
+
+### Что НЕ удалось
+- Inline-стили компонентов не переведены на `var(--token)` — рефакторинг для отдельной сессии
+
+### Контекст для следующей сессии 2.4
+CSS-переменные определены в `:root`, иконки в навбаре работают. Вкладки Комната, Фото, 3D — полностью отполированы.
+
+Следующий блок — UI-задачи, запланированные в сессии 1.5 (перенесены через 2.2 → 2.3 → 2.4):
+1. **SavedToast** (App.jsx) — pill «✓ Сохранено», Zustand subscribe + debounce 1500ms, fixed bottom-right над navbar.
+2. **EmptyState компонент** (src/components/shared/EmptyState.jsx) — унифицированный icon+title+subtitle+button. Применить в ViewerTab и PixelizerTab.
+3. **Tab fade-in** (App.css + App.jsx) — data-visible + @keyframes tabFadeIn 150ms. Выход мгновенный.
+4. **ExportTab + LayoutTab** — tease-карточки с wireframe-превью и bullet-фичами (детали в сессии 1.5).
+5. **RoomTab** — flow strip + улучшенный empty hint при walls.length===0.
 
 ---
 
