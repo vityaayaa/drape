@@ -1,4 +1,5 @@
 // src/components/room/MaskCard.jsx
+import { useState } from 'react'
 import { useProjectStore } from '../../store/projectStore.js'
 
 const COORD_FIELDS = [
@@ -10,11 +11,12 @@ const COORD_FIELDS = [
 
 export default function MaskCard({ wallId, mask }) {
   const { updateMask, removeMask } = useProjectStore()
+  const [leaving, setLeaving] = useState(false)
 
   const maskColor = mask.color || '#888888'
 
   return (
-    <div style={s.card}>
+    <div style={s.card} className={leaving ? 'anim-card-exit' : 'anim-card-enter'}>
       <div style={s.topRow}>
         <input
           style={s.nameInput}
@@ -22,7 +24,10 @@ export default function MaskCard({ wallId, mask }) {
           value={mask.name}
           onChange={(e) => updateMask(wallId, mask.id, 'name', e.target.value)}
         />
-        <button style={s.delBtn} onClick={() => removeMask(wallId, mask.id)}>
+        <button style={s.delBtn} onClick={() => {
+          setLeaving(true)
+          setTimeout(() => removeMask(wallId, mask.id), 190)
+        }}>
           Удалить
         </button>
       </div>
