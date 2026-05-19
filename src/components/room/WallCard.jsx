@@ -8,6 +8,7 @@ export default function WallCard({ wall, result }) {
   const { updateWall, removeWall, addMask, setTileOverride, clearTileOverride } = useProjectStore()
   const [showOverride, setShowOverride] = useState(Object.keys(wall.tile_overrides).length > 0)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [leaving, setLeaving] = useState(false)
   const [touched, setTouched] = useState({})
   const masksListRef = useRef(null)
 
@@ -27,7 +28,10 @@ export default function WallCard({ wall, result }) {
     : 'rgba(255,255,255,0.07)'
 
   return (
-    <div style={{ ...s.card, borderColor }}>
+    <div
+      style={{ ...s.card, borderColor }}
+      className={leaving ? 'anim-card-exit' : 'anim-card-enter'}
+    >
       {/* Заголовок */}
       <div style={s.header}>
         <input
@@ -46,7 +50,10 @@ export default function WallCard({ wall, result }) {
         {deleteConfirm ? (
           <div style={s.deleteConfirm}>
             <span style={s.deleteConfirmText}>Удалить?</span>
-            <button style={s.confirmYes} onClick={() => removeWall(wall.id)}>Да</button>
+            <button style={s.confirmYes} onClick={() => {
+              setLeaving(true)
+              setTimeout(() => removeWall(wall.id), 190)
+            }}>Да</button>
             <button style={s.confirmNo} onClick={() => setDeleteConfirm(false)}>Нет</button>
           </div>
         ) : (
