@@ -8,6 +8,7 @@ export default function WallCard({ wall, result }) {
   const { updateWall, removeWall, addMask, setTileOverride, clearTileOverride } = useProjectStore()
   const [showOverride, setShowOverride] = useState(Object.keys(wall.tile_overrides).length > 0)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [touched, setTouched] = useState({})
 
   useEffect(() => {
     if (!deleteConfirm) return
@@ -58,17 +59,25 @@ export default function WallCard({ wall, result }) {
           <label style={s.fieldLabel}>Длина</label>
           <div style={s.inputWrap}>
             <input style={s.input} type="number" min="0" step="any" placeholder="—" value={wall.length}
-              onChange={(e) => updateWall(wall.id, 'length', e.target.value)} />
+              onChange={(e) => updateWall(wall.id, 'length', e.target.value)}
+              onBlur={() => setTouched(t => ({ ...t, length: true }))} />
             <span style={s.unit}>см</span>
           </div>
+          {touched.length && !(Number(wall.length) > 0) && (
+            <span style={s.fieldError}>Больше 0</span>
+          )}
         </div>
         <div style={s.field}>
           <label style={s.fieldLabel}>Высота</label>
           <div style={s.inputWrap}>
             <input style={s.input} type="number" min="0" step="any" placeholder="—" value={wall.height}
-              onChange={(e) => updateWall(wall.id, 'height', e.target.value)} />
+              onChange={(e) => updateWall(wall.id, 'height', e.target.value)}
+              onBlur={() => setTouched(t => ({ ...t, height: true }))} />
             <span style={s.unit}>см</span>
           </div>
+          {touched.height && !(Number(wall.height) > 0) && (
+            <span style={s.fieldError}>Больше 0</span>
+          )}
         </div>
       </div>
 
@@ -139,4 +148,5 @@ const s = {
   masksTitle:        { fontSize: 12, fontWeight: 600, color: '#475569' },
   addMaskBtn:        { height: 32, padding: '0 12px', background: 'rgba(139,92,246,0.12)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 8, fontSize: 12, cursor: 'pointer' },
   empty:             { fontSize: 12, color: '#334155', margin: 0 },
+  fieldError:        { display: 'block', fontSize: 11, color: '#ef4444', marginTop: 2 },
 }
