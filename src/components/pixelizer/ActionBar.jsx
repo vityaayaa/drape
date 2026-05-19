@@ -1,12 +1,21 @@
 // src/components/pixelizer/ActionBar.jsx
+import { useState } from 'react'
+
 export default function ActionBar({
   uiMode, pixelizerMode, hasPhotos, anyStale, sampling,
   onAddPhoto, onShowWalls, onPixelize, onDone, onDelete, onToast,
 }) {
+  const [deleteTap, setDeleteTap] = useState(false)
+
   if (uiMode === 'transform') {
     return (
       <div style={s.bar}>
-        <button style={s.danger} onClick={onDelete}>Удалить</button>
+        <button
+          style={s.danger}
+          className={deleteTap ? 'anim-delete-flash' : ''}
+          onPointerDown={() => { setDeleteTap(true); setTimeout(() => setDeleteTap(false), 160) }}
+          onClick={onDelete}
+        >Удалить</button>
         <button style={s.primary} onClick={onDone}>Готово ✓</button>
       </div>
     )
@@ -14,7 +23,6 @@ export default function ActionBar({
 
   // navigate / pixelize
   const isStale = anyStale && pixelizerMode === 'mosaic'
-  const pixelizeLabel = sampling ? '...' : (isStale ? '⟳ Обновить' : 'Пикселизировать →')
 
   function handlePixelizeClick() {
     if (!hasPhotos) {
@@ -37,11 +45,11 @@ export default function ActionBar({
       </button>
       <button
         style={s.primary}
-        className={isStale ? 'btn-stale' : ''}
+        className={sampling ? 'btn-pixelize-loading' : (isStale ? 'btn-stale' : '')}
         onClick={handlePixelizeClick}
         disabled={sampling}
       >
-        {pixelizeLabel}
+        {sampling ? 'Обрабатываю…' : (isStale ? '⟳ Обновить' : 'Пикселизировать →')}
       </button>
     </div>
   )
