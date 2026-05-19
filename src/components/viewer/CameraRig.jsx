@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle, useRef, useEffect } from 'react'
+import { forwardRef, useImperativeHandle, useRef, useEffect, useMemo } from 'react'
 import { useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -67,10 +67,12 @@ const CameraRig = forwardRef(function CameraRig(
     return () => canvas.removeEventListener('dblclick', handleDblClick)
   }, [gl, camera, scene, invalidate])
 
+  const targetVec = useMemo(() => new THREE.Vector3(...initialTarget), [initialTarget])
+
   return (
     <OrbitControls
       ref={orbitRef}
-      target={new THREE.Vector3(...initialTarget)}
+      target={targetVec}
       enableDamping
       dampingFactor={0.05}
       rotateSpeed={0.6}
