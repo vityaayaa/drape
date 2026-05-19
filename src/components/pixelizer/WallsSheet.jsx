@@ -1,9 +1,16 @@
 // src/components/pixelizer/WallsSheet.jsx
+import { useState } from 'react'
 import { useProjectStore } from '../../store/projectStore.js'
 
 export default function WallsSheet({ onClose }) {
   const { walls, pixelizer, setVisibleWalls } = useProjectStore()
   const visible = pixelizer.visibleWalls
+  const [leaving, setLeaving] = useState(false)
+
+  function handleClose() {
+    setLeaving(true)
+    setTimeout(onClose, 200)
+  }
 
   function toggle(id) {
     if (visible === null) {
@@ -19,8 +26,8 @@ export default function WallsSheet({ onClose }) {
   const isVisible = (id) => visible === null || visible.includes(id)
 
   return (
-    <div style={s.overlay} onClick={onClose}>
-      <div style={s.sheet} onClick={e => e.stopPropagation()} className="sheet-up">
+    <div style={s.overlay} onClick={handleClose}>
+      <div style={s.sheet} onClick={e => e.stopPropagation()} className={leaving ? 'anim-sheet-exit' : 'anim-sheet-enter'}>
         <div style={s.handle} />
         <p style={s.title}>Видимость стен</p>
 

@@ -1,9 +1,15 @@
 // src/components/pixelizer/WallSelectSheet.jsx
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 
 export default function WallSelectSheet({ walls, selectedWallIds, onToggle, onSelectAll, onFileSelected, onCancel }) {
   const inputRef = useRef(null)
   const hasSelection = selectedWallIds.length > 0
+  const [leaving, setLeaving] = useState(false)
+
+  function handleClose() {
+    setLeaving(true)
+    setTimeout(onCancel, 200)
+  }
 
   async function handleFile(e) {
     const file = e.target.files?.[0]
@@ -13,14 +19,14 @@ export default function WallSelectSheet({ walls, selectedWallIds, onToggle, onSe
   }
 
   return (
-    <div style={s.sheet} className="sheet-up">
+    <div style={s.sheet} className={leaving ? 'anim-sheet-exit' : 'anim-sheet-enter'}>
       {/* Handle */}
       <div style={s.handle} />
 
       {/* Title row */}
       <div style={s.titleRow}>
         <span style={s.title}>Выбери стены для фото</span>
-        <button style={s.closeBtn} onClick={onCancel}>
+        <button style={s.closeBtn} onClick={handleClose}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
           </svg>
