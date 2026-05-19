@@ -729,9 +729,36 @@ CSS-переменные определены в `:root`, иконки в нав
 
 ---
 
-## Сессия 2.4 — [ОЖИДАЕТ ВЫПОЛНЕНИЯ]
+## Сессия 2.4 — Анимации ✅
 
-*Результаты будут записаны сюда после завершения сессии.*
+### Библиотека
+CSS transitions + @keyframes (без зависимостей). Framer Motion не нужен — все анимации простые (fade, slide, scale).
+
+### Реализованные анимации
+- WallCard: slide-down при mount, slide-up перед удалением (leaving state + setTimeout 190ms)
+- MaskCard: то же самое
+- Bottom sheets (WallSelectSheet, WallsSheet): slide-up вход, slide-down выход (leaving + setTimeout 200ms)
+- Tab panels: fade-in 150ms при входе, мгновенный выход (display:none — Three.js батарея)
+- Pixelize кнопка: CSS спиннер через ::after при sampling=true, текст «Обрабатываю…»
+- Delete кнопка (ActionBar): red flash при tap
+
+### prefers-reduced-motion
+Один блок `@media (prefers-reduced-motion: reduce)` в конце `src/animations.css` — обнуляет все animation-duration и transition-duration до 0.01ms.
+
+### Блок Б (отложенные задачи 1.5)
+- SavedToast: pill «✓ Сохранено», Zustand subscribe + debounce 1500ms, виден 2с, fade — `src/components/shared/SavedToast.jsx`
+- EmptyState: унифицированный компонент `src/components/shared/EmptyState.jsx`, применён в ViewerTab и PixelizerTab
+- Tab fade-in: `data-visible` атрибут + @keyframes tabFadeIn в App.css
+- ExportTab: tease-карточка с wireframe сеткой 5×4 и bullet-фичами
+- LayoutTab: tease-карточка с wireframe таблицей и bullet-фичами
+- RoomTab: flow strip при walls=0, улучшенный empty hint с иконкой LayoutGrid
+
+### Что НЕ удалось
+- PhotoSheet: exit анимация не добавлена (не упомянута явно в промпте)
+- «+ Добавить стену» tap feedback: оставлен (TileForm не трогался)
+
+### Контекст для следующей сессии 2.5
+Все shared компоненты в `src/components/shared/` (EmptyState, SavedToast). EmptyState принимает `{icon, title, subtitle, actionLabel, onAction}`. SavedToast уже работает, не трогать. Tab fade-in работает через `data-visible`. Финальная сессия 2.5 — онбординг и пустые состояния (уже частично закрыты EmptyState в ViewerTab и PixelizerTab).
 
 ---
 
