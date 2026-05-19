@@ -41,6 +41,8 @@ export function drawWallPhoto(
     ctx.rect(0, 0, W, H)
     ctx.clip()
     ctx.globalAlpha = photoSettings.opacity ?? 1
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
     const { brightness = 1, contrast = 1, saturation = 1 } = photoSettings
     if (brightness !== 1 || contrast !== 1 || saturation !== 1) {
       ctx.filter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturation})`
