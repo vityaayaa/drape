@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
 import { Box } from 'lucide-react'
+import EmptyState from '../shared/EmptyState.jsx'
 import { useProjectStore } from '../../store/projectStore.js'
 import { Canvas } from '@react-three/fiber'
 import { computeWallPositions } from '../../utils/computeWallPositions.js'
@@ -27,13 +28,14 @@ export default function ViewerTab() {
 
   if (activeWalls.length === 0) {
     return (
-      <div style={s.empty}>
-        <Box size={32} color="#818cf8" style={{ opacity: 0.5 }} />
-        <p style={s.emptyTitle}>Нет стен для 3D-просмотра</p>
-        <p style={s.emptySubtitle}>Заполните длину и высоту хотя бы одной стены</p>
-        <button style={s.emptyBtn} onClick={() => setActiveTab('room')}>
-          → Перейти в Комнату
-        </button>
+      <div style={{ position: 'relative', width: '100%', height: '100%', background: '#08080f' }}>
+        <EmptyState
+          icon={<Box size={32} color="#818cf8" style={{ opacity: 0.5 }} />}
+          title="Нет стен для 3D-просмотра"
+          subtitle="Заполните длину и высоту хотя бы одной стены"
+          actionLabel="→ Перейти в Комнату"
+          onAction={() => setActiveTab('room')}
+        />
       </div>
     )
   }
@@ -106,19 +108,5 @@ const s = {
     position: 'absolute',
     top: 48, // must match ViewerToolbar height
     bottom: 0, left: 0, right: 0,
-  },
-  empty: {
-    width: '100%', height: '100%',
-    display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center',
-    background: '#08080f', gap: 8, padding: '0 32px',
-  },
-  emptyTitle:    { fontSize: 15, color: '#94a3b8', margin: 0, textAlign: 'center' },
-  emptySubtitle: { fontSize: 12, color: '#64748b', margin: 0, textAlign: 'center', maxWidth: 240 },
-  emptyBtn: {
-    marginTop: 8, height: 40, padding: '0 20px',
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.12)',
-    borderRadius: 12, color: '#f1f5f9', fontSize: 14, cursor: 'pointer',
   },
 }

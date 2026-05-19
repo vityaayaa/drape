@@ -12,6 +12,8 @@ import ActionBar from './ActionBar.jsx'
 import WallSelectSheet from './WallSelectSheet.jsx'
 import WallsSheet from './WallsSheet.jsx'
 import Toast from './Toast.jsx'
+import EmptyState from '../shared/EmptyState.jsx'
+import { Camera } from 'lucide-react'
 
 export default function PixelizerTab() {
   const {
@@ -405,18 +407,14 @@ export default function PixelizerTab() {
 function EmptyNoWalls() {
   const { setActiveTab } = useProjectStore()
   return (
-    <div style={s.emptyRoot}>
-      <svg width="72" height="54" viewBox="0 0 72 54" fill="none" style={{ marginBottom: 16, opacity: 0.25 }}>
-        <rect x="2" y="7" width="20" height="45" rx="2" stroke="#818cf8" strokeWidth="1.5"/>
-        <rect x="27" y="16" width="18" height="36" rx="2" stroke="#818cf8" strokeWidth="1.5"/>
-        <rect x="50" y="2" width="20" height="50" rx="2" stroke="#818cf8" strokeWidth="1.5"/>
-        <line x1="2" y1="52" x2="70" y2="52" stroke="#818cf8" strokeWidth="1" strokeDasharray="2 3"/>
-      </svg>
-      <p style={s.emptyTitle}>Нет стен</p>
-      <p style={s.emptyHint}>Добавьте стены в разделе «Комната»,{'\n'}затем вернитесь сюда</p>
-      <button style={s.emptyBtn} onClick={() => setActiveTab('room')}>
-        Перейти в «Комнату» →
-      </button>
+    <div style={{ position: 'relative', flex: 1 }}>
+      <EmptyState
+        icon={<Camera size={32} color="#818cf8" style={{ opacity: 0.5 }} />}
+        title="Сначала добавь стены"
+        subtitle="Фото накладывается только когда есть стена с размерами"
+        actionLabel="→ Перейти в Комнату"
+        onAction={() => setActiveTab('room')}
+      />
     </div>
   )
 }
@@ -439,25 +437,5 @@ const s = {
     display: 'flex', flexDirection: 'column',
     overflow: 'hidden',
     position: 'relative',
-  },
-  emptyRoot: {
-    flex: 1, height: '100%',
-    display: 'flex', flexDirection: 'column',
-    alignItems: 'center', justifyContent: 'center',
-    padding: '32px',
-    textAlign: 'center',
-    background: '#08080f',
-  },
-  emptyTitle: { fontSize: 18, fontWeight: 600, color: 'rgba(255,255,255,0.45)', marginBottom: 8 },
-  emptyHint:  { fontSize: 13, color: 'rgba(255,255,255,0.25)', lineHeight: 1.6, marginBottom: 24, whiteSpace: 'pre-line' },
-  emptyBtn: {
-    padding: '11px 28px',
-    background: 'rgba(129,140,248,0.12)',
-    border: '1px solid rgba(129,140,248,0.30)',
-    borderRadius: 12,
-    color: '#818cf8',
-    fontSize: 14,
-    fontWeight: 500,
-    cursor: 'pointer',
   },
 }
