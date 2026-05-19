@@ -1,4 +1,5 @@
 import { useProjectStore } from './store/projectStore.js'
+import { LayoutGrid, Camera, Box, PenLine, Grid3x3 } from 'lucide-react'
 import RoomTab from './components/room/RoomTab.jsx'
 import PixelizerTab from './components/pixelizer/PixelizerTab.jsx'
 import ViewerTab from './components/viewer/ViewerTab.jsx'
@@ -6,11 +7,11 @@ import ExportTab from './components/export/ExportTab.jsx'
 import LayoutTab from './components/layout/LayoutTab.jsx'
 
 const TABS = [
-  { id: 'room',      label: 'Комната' },
-  { id: 'pixelizer', label: 'Фото' },
-  { id: 'viewer',    label: '3D' },
-  { id: 'export',    label: 'Схема' },
-  { id: 'layout',    label: 'Укладка' },
+  { id: 'room',      label: 'Комната', icon: LayoutGrid },
+  { id: 'pixelizer', label: 'Фото',    icon: Camera },
+  { id: 'viewer',    label: '3D',      icon: Box },
+  { id: 'export',    label: 'Схема',   icon: PenLine,  stub: true },
+  { id: 'layout',    label: 'Укладка', icon: Grid3x3,  stub: true },
 ]
 
 export default function App() {
@@ -41,8 +42,10 @@ export default function App() {
           <button
             key={tab.id}
             className={`nav-tab${activeTab === tab.id ? ' active' : ''}`}
+            data-stub={tab.stub ? 'true' : undefined}
             onClick={() => setActiveTab(tab.id)}
           >
+            <tab.icon size={22} strokeWidth={1.75} />
             {tab.label}
           </button>
         ))}
