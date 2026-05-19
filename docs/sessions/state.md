@@ -594,9 +594,58 @@ Flow strip в Комнате достаточно для ориентации н
 
 ---
 
-## Сессия 2.1 — [ОЖИДАЕТ ВЫПОЛНЕНИЯ]
+## Сессия 2.1 — Баги Фото ✅
 
-*Результаты будут записаны сюда после завершения сессии.*
+### П1 — Режим трансформации (жесты)
+Touch-обработчики добавлены на canvas активного фото в `WallCanvas.jsx`. Однопальцевый жест — пан (обновляет offsetX_mm/offsetY_mm), два пальца — масштаб. Мировая навигация (TransformWrapper) продолжает работать вне canvas активного фото. `worldScale` отслеживается в `PhotoPanorama` через `onTransform` и передаётся вниз по цепочке. Стабильные колбэки через `useCallback` в `PixelizerTab`.
+Файлы: `PixelizerTab.jsx`, `PhotoPanorama.jsx`, `WallCanvas.jsx`.
+
+### П2 — Яркость/Контраст/Насыщенность
+Фильтры уже были реализованы в `pixelizerRenderer.js` и `pixelizerSampler.js` — код присутствовал до начала сессии. Изменений не потребовалось, верификация подтвердила корректность.
+
+### П3 — Числовые поля (сломанный ввод)
+`Field` компонент в `ControlsPane.jsx` переписан на uncontrolled паттерн: локальный строковый state `localVal`, `onChange` обновляет только строку, `onBlur` фиксирует значение с парсингом и clamp. Нажатие Enter вызывает blur.
+Файл: `ControlsPane.jsx`.
+
+### П4 — iOS leading zero ("050")
+Решено совместно с П3: `type="number"` заменён на `type="text" inputMode="decimal"`.
+Файл: `ControlsPane.jsx`.
+
+### П5 — Отрицательный сдвиг
+Подтверждено: offsetX_mm и offsetY_mm передавались без `min=` ограничений и до исправлений — изменений не потребовалось. Negative values работают корректно после перехода на text input.
+
+### П6 — Floor anchor (выравнивание плиток снизу)
+Добавлена функция `floorAnchorStartY(H, rows, tileH_mm, groutW_mm, canvasScale)` в `pixelizerRenderer.js`. Все Y-координаты плиток смещены на `startY = H - rows * stepY`. `isFullyInsideMask` получил параметр `tileStartY_mm` для корректного пересечения маска-плитка. Аналогичные изменения в `drawWallMosaic` и `pixelizerSampler.js`.
+Файлы: `pixelizerGeometry.js`, `pixelizerGeometry.test.js`, `pixelizerRenderer.js`, `pixelizerSampler.js`.
+
+### П7 — Качество изображения
+`ctx.imageSmoothingEnabled = true` и `ctx.imageSmoothingQuality = 'high'` добавлены перед `drawImage` в `drawWallPhoto`.
+Файл: `pixelizerRenderer.js`.
+
+### Тесты
+45 тестов, все зелёные. Новый тест для `isFullyInsideMask` с `tileStartY_mm` проверяет оба режима (обратная совместимость + floor anchor).
+
+### Что НЕ удалось / остаток
+- П1 (жесты) работает только при тапе на canvas активного фото. Если пользователь хочет прокрутить панораму в режиме transform — возможно через другие стены или фоновую область.
+- Все остальные баги сессии 2.1 реализованы и проверены двухэтапным ревью.
+
+### Коммиты
+- `3c314e6` — П7 image quality
+- `fa0c0cf` — П3+П4+П5 Field input
+- `588ec9c` — П6 floor anchor
+- `bbda4b0` — П1 gesture transform
+- `71cfbdd` — quality fix: useCallback + passive comment
+
+### Промпт для следующей сессии 2.2
+
+```
+Прочитай docs/sessions/state.md — там полный контекст проекта и итоги сессии 2.1.
+
+Вкладка Фото (PixelizerTab) — баги исправлены в сессии 2.1. Теперь нужна сессия 2.2.
+
+Ориентируйся на промпт из state.md сессии 1.5 для сессии 2.1 (там описана следующая очередь задач фазы 2).
+Следующий блок — UI-задачи фазы 2: SavedToast, EmptyState компонент, tab fade-in анимация, tease-карточки ExportTab/LayoutTab, flow strip в RoomTab, стиль заглушек в таббаре.
+```
 
 ---
 
