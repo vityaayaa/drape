@@ -5,6 +5,7 @@ import PixelizerTab from './components/pixelizer/PixelizerTab.jsx'
 import ViewerTab from './components/viewer/ViewerTab.jsx'
 import ExportTab from './components/export/ExportTab.jsx'
 import LayoutTab from './components/layout/LayoutTab.jsx'
+import SavedToast from './components/shared/SavedToast.jsx'
 
 const TABS = [
   { id: 'room',      label: 'Комната', icon: LayoutGrid },
@@ -37,6 +38,7 @@ export default function App() {
         </div>
       </div>
 
+      <SavedToast />
       <nav className="bottom-nav">
         {TABS.map((tab) => (
           <button
