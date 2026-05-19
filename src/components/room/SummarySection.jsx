@@ -18,9 +18,9 @@ export default function SummarySection({ results }) {
         <thead>
           <tr>
             <th style={s.th}>Стена</th>
-            <th style={s.th}>Колонок</th>
-            <th style={s.th}>Рядов</th>
-            <th style={s.th}>Плиток</th>
+            <th style={s.thNum}>Колонок</th>
+            <th style={s.thNum}>Рядов</th>
+            <th style={s.thNum}>Плиток</th>
           </tr>
         </thead>
         <tbody>
@@ -31,7 +31,7 @@ export default function SummarySection({ results }) {
                 <td style={s.td}>{wall.name}</td>
                 <td style={s.tdNum}>{r ? r.columns : '—'}</td>
                 <td style={s.tdNum}>{r ? r.rows : '—'}</td>
-                <td style={{ ...s.tdNum, color: r?.blocked ? '#f87171' : r?.warning ? '#fbbf24' : '#f1f5f9' }}>
+                <td style={{ ...s.tdNum, color: r?.blocked ? '#f87171' : r?.warning ? '#f59e0b' : '#f1f5f9' }}>
                   {r ? r.total.toLocaleString() : '—'}
                 </td>
               </tr>
@@ -54,12 +54,13 @@ export default function SummarySection({ results }) {
 }
 
 const s = {
-  block:   { padding: '18px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)', marginTop: 10 },
-  heading: { fontSize: 15, fontWeight: 700, marginBottom: 14, color: '#f1f5f9', letterSpacing: '-0.01em' },
+  block:   { padding: '18px 20px', borderTop: '1px solid rgba(255,255,255,0.07)', background: '#0e1018', marginTop: 10 },
+  heading: { fontSize: 18, fontWeight: 600, marginBottom: 14, color: '#f1f5f9', letterSpacing: '-0.01em' },
   table:   { width: '100%', borderCollapse: 'collapse', fontSize: 13 },
   th:      { textAlign: 'left', padding: '6px 8px', color: '#475569', borderBottom: '1px solid rgba(255,255,255,0.07)', fontWeight: 500, fontSize: 12 },
+  thNum:   { textAlign: 'right', padding: '6px 8px', color: '#475569', borderBottom: '1px solid rgba(255,255,255,0.07)', fontWeight: 500, fontSize: 12 },
   tr:      { borderBottom: '1px solid rgba(255,255,255,0.04)' },
   td:      { padding: '8px 8px', color: '#94a3b8' },
-  tdNum:   { padding: '8px 8px', textAlign: 'right', color: '#f1f5f9', fontFamily: 'ui-monospace, monospace', fontSize: 13 },
+  tdNum:   { padding: '8px 8px', textAlign: 'right', color: '#f1f5f9', fontFamily: 'ui-monospace, monospace', fontSize: 13, fontVariantNumeric: 'tabular-nums' },
   footRow: { borderTop: '2px solid rgba(255,255,255,0.1)' },
 }

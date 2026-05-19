@@ -1,5 +1,5 @@
 // src/components/room/WallCard.jsx
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useProjectStore } from '../../store/projectStore.js'
 import MaskCard from './MaskCard.jsx'
 import TileForm from './TileForm.jsx'
@@ -7,6 +7,13 @@ import TileForm from './TileForm.jsx'
 export default function WallCard({ wall, result }) {
   const { updateWall, removeWall, addMask, setTileOverride, clearTileOverride } = useProjectStore()
   const [showOverride, setShowOverride] = useState(Object.keys(wall.tile_overrides).length > 0)
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+
+  useEffect(() => {
+    if (!deleteConfirm) return
+    const t = setTimeout(() => setDeleteConfirm(false), 3000)
+    return () => clearTimeout(t)
+  }, [deleteConfirm])
 
   const hasWarning = result?.warning && !result?.blocked
   const hasBlocked = result?.blocked
@@ -14,8 +21,8 @@ export default function WallCard({ wall, result }) {
   const borderColor = hasBlocked
     ? 'rgba(239,68,68,0.4)'
     : hasWarning
-    ? 'rgba(251,191,36,0.35)'
-    : 'rgba(255,255,255,0.08)'
+    ? 'rgba(245,158,11,0.35)'
+    : 'rgba(255,255,255,0.07)'
 
   return (
     <div style={{ ...s.card, borderColor }}>
@@ -34,13 +41,21 @@ export default function WallCard({ wall, result }) {
           <input type="checkbox" checked={wall.mosaic_active} disabled={!wall.wall_active} onChange={() => updateWall(wall.id, 'mosaic_active', !wall.mosaic_active)} />
           <span style={s.toggleLabel}>Мозаика</span>
         </label>
-        <button style={s.delBtn} onClick={() => removeWall(wall.id)}>✕</button>
+        {deleteConfirm ? (
+          <div style={s.deleteConfirm}>
+            <span style={s.deleteConfirmText}>Удалить?</span>
+            <button style={s.confirmYes} onClick={() => removeWall(wall.id)}>Да</button>
+            <button style={s.confirmNo} onClick={() => setDeleteConfirm(false)}>Нет</button>
+          </div>
+        ) : (
+          <button style={s.delBtn} onClick={() => setDeleteConfirm(true)} aria-label="Удалить стену">✕</button>
+        )}
       </div>
 
       {/* Размеры */}
       <div style={s.sizeRow}>
         <div style={s.field}>
-          <label style={s.label}>Длина</label>
+          <label style={s.fieldLabel}>Длина</label>
           <div style={s.inputWrap}>
             <input style={s.input} type="number" min="0" step="any" placeholder="—" value={wall.length}
               onChange={(e) => updateWall(wall.id, 'length', e.target.value)} />
@@ -48,7 +63,7 @@ export default function WallCard({ wall, result }) {
           </div>
         </div>
         <div style={s.field}>
-          <label style={s.label}>Высота</label>
+          <label style={s.fieldLabel}>Высота</label>
           <div style={s.inputWrap}>
             <input style={s.input} type="number" min="0" step="any" placeholder="—" value={wall.height}
               onChange={(e) => updateWall(wall.id, 'height', e.target.value)} />
@@ -66,9 +81,12 @@ export default function WallCard({ wall, result }) {
       )}
 
       {/* Переопределение плитки */}
-      <button style={s.overrideToggle} onClick={() => setShowOverride(v => !v)}>
-        {showOverride ? '▾' : '▸'} Переопределить плитку для этой стены
-      </button>
+      <div style={s.overrideWrap}>
+        <button style={s.overrideBtn} onClick={() => setShowOverride(v => !v)}>
+          <span style={s.overrideBtnIcon}>{showOverride ? '▴' : '▾'}</span>
+          Параметры плитки стены
+        </button>
+      </div>
       {showOverride && (
         <div style={s.overrideBlock}>
           <TileForm
@@ -94,25 +112,31 @@ export default function WallCard({ wall, result }) {
 }
 
 const s = {
-  card:          { background: 'rgba(255,255,255,0.04)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, marginBottom: 10, marginLeft: 16, marginRight: 16, overflow: 'hidden', boxShadow: '0 4px 24px rgba(0,0,0,0.3)' },
-  header:        { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(124,58,237,0.07)', borderBottom: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' },
-  nameInput:     { flex: 1, minWidth: 80, background: 'transparent', border: 'none', borderBottom: '1px solid rgba(139,92,246,0.5)', color: '#f1f5f9', fontSize: 14, fontWeight: 600, padding: '2px 4px', outline: 'none' },
-  toggle:        { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' },
-  toggleLabel:   { fontSize: 12, color: '#64748b' },
-  delBtn:        { marginLeft: 'auto', background: 'transparent', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 6, color: '#475569', fontSize: 13, cursor: 'pointer', padding: '3px 8px' },
-  sizeRow:       { display: 'flex', gap: 16, padding: '12px 14px 0' },
-  field:         { display: 'flex', alignItems: 'center', gap: 6 },
-  label:         { fontSize: 13, color: '#64748b' },
-  inputWrap:     { display: 'flex', alignItems: 'center', gap: 4 },
-  input:         { width: 76, padding: '6px 8px', background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 7, color: '#f1f5f9', fontSize: 13, outline: 'none' },
-  unit:          { fontSize: 12, color: '#475569' },
-  warning:       { margin: '8px 14px 0', padding: '7px 10px', background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)', color: '#fbbf24', borderRadius: 7, fontSize: 12 },
-  blocked:       { margin: '8px 14px 0', padding: '7px 10px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', borderRadius: 7, fontSize: 12 },
-  overrideToggle:{ display: 'block', margin: '10px 14px 0', background: 'transparent', border: 'none', color: '#475569', fontSize: 12, cursor: 'pointer', textAlign: 'left', padding: 0 },
-  overrideBlock: { margin: '4px 14px', border: '1px dashed rgba(139,92,246,0.2)', borderRadius: 8 },
-  masksSection:  { padding: '10px 14px 14px' },
-  masksHeader:   { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  masksTitle:    { fontSize: 12, color: '#475569', fontWeight: 600 },
-  addMaskBtn:    { padding: '4px 10px', background: 'rgba(139,92,246,0.12)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 6, fontSize: 12, cursor: 'pointer' },
-  empty:         { fontSize: 12, color: '#2d3748', margin: 0 },
+  card:              { background: '#0e1018', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, marginBottom: 12, marginLeft: 16, marginRight: 16, overflow: 'hidden', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 24px rgba(0,0,0,0.4)' },
+  header:            { display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', background: 'rgba(124,58,237,0.07)', borderBottom: '1px solid rgba(255,255,255,0.06)', flexWrap: 'wrap' },
+  nameInput:         { flex: 1, minWidth: 80, background: 'transparent', border: 'none', borderBottom: '1px solid rgba(139,92,246,0.5)', color: '#f1f5f9', fontSize: 14, fontWeight: 600, padding: '2px 4px', outline: 'none' },
+  toggle:            { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' },
+  toggleLabel:       { fontSize: 12, color: '#64748b' },
+  delBtn:            { marginLeft: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50%', color: '#475569', fontSize: 14, cursor: 'pointer', flexShrink: 0 },
+  deleteConfirm:     { marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 },
+  deleteConfirmText: { fontSize: 12, color: '#94a3b8' },
+  confirmYes:        { height: 32, padding: '0 12px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 8, color: '#f87171', fontSize: 12, fontWeight: 600, cursor: 'pointer' },
+  confirmNo:         { height: 32, padding: '0 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#64748b', fontSize: 12, cursor: 'pointer' },
+  sizeRow:           { display: 'flex', gap: 16, padding: '12px 14px 4px' },
+  field:             { display: 'flex', alignItems: 'center', gap: 6 },
+  fieldLabel:        { fontSize: 13, fontWeight: 500, color: '#64748b' },
+  inputWrap:         { display: 'flex', alignItems: 'center', gap: 4 },
+  input:             { width: 76, height: 44, padding: '0 8px', background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#f1f5f9', fontSize: 13, boxSizing: 'border-box' },
+  unit:              { fontSize: 12, color: '#475569' },
+  warning:           { margin: '8px 14px 0', padding: '8px 12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b', borderRadius: 8, fontSize: 12 },
+  blocked:           { margin: '8px 14px 0', padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', borderRadius: 8, fontSize: 12 },
+  overrideWrap:      { padding: '10px 14px 0' },
+  overrideBtn:       { display: 'flex', alignItems: 'center', gap: 6, width: '100%', height: 40, padding: '0 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#94a3b8', fontSize: 13, fontWeight: 500, cursor: 'pointer', textAlign: 'left', boxSizing: 'border-box' },
+  overrideBtnIcon:   { fontSize: 10, color: '#64748b' },
+  overrideBlock:     { margin: '8px 14px', background: '#141820', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 12, overflow: 'hidden' },
+  masksSection:      { padding: '10px 14px 14px' },
+  masksHeader:       { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  masksTitle:        { fontSize: 12, fontWeight: 600, color: '#475569' },
+  addMaskBtn:        { height: 32, padding: '0 12px', background: 'rgba(139,92,246,0.12)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 8, fontSize: 12, cursor: 'pointer' },
+  empty:             { fontSize: 12, color: '#334155', margin: 0 },
 }

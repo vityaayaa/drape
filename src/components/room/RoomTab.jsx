@@ -32,6 +32,6 @@ export default function RoomTab() {
 }
 
 const s = {
-  page:      { overflowY: 'auto', height: '100%', color: '#f1f5f9' },
-  emptyHint: { padding: '40px 20px', color: '#3f4a5e', fontSize: 14, textAlign: 'center' },
+  page:      { overflowY: 'auto', height: '100%', background: '#08080f', color: '#f1f5f9' },
+  emptyHint: { padding: '40px 20px', color: '#334155', fontSize: 14, textAlign: 'center' },
 }
