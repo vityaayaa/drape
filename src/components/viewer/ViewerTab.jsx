@@ -1,20 +1,13 @@
-import { useEffect } from 'react'
+import { useRef } from 'react'
 import { Box } from 'lucide-react'
 import { useProjectStore } from '../../store/projectStore.js'
-import { Canvas, useThree } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { Canvas } from '@react-three/fiber'
 import { computeWallPositions } from '../../utils/computeWallPositions.js'
 import RoomScene from './RoomScene.jsx'
-
-// Вызывает один принудительный рендер сразу при mount —
-// нужно потому что frameloop="demand" не рендерит автоматически.
-function InitialRender() {
-  const { invalidate } = useThree()
-  useEffect(() => { invalidate() }, [])
-  return null
-}
+import CameraRig from './CameraRig.jsx'
 
 export default function ViewerTab() {
+  const cameraRef = useRef()
   const walls = useProjectStore((s) => s.walls)
   const corners = useProjectStore((s) => s.corners)
   const setActiveTab = useProjectStore((s) => s.setActiveTab)
@@ -42,6 +35,11 @@ export default function ViewerTab() {
   // Берём максимум из суммарного периметра и максимальной высоты — комната видна целиком
   const camDist = Math.max(totalSpan * 0.9, maxHeight * 2.5, 400)
 
+  const cx = center[0]
+  const cz = center[2]
+  const initialPosition = [cx + camDist * 0.7, maxHeight / 2 + camDist * 0.5, cz + camDist * 0.7]
+  const initialTarget = [cx, maxHeight / 2, cz]
+
   // key пересоздаёт Canvas при изменении набора активных стен — иначе камера
   // не обновляется (R3F применяет camera prop только при первом монтировании).
   // frameloop="demand" останавливает рендер-цикл когда вкладка скрыта (display:none),
@@ -54,24 +52,26 @@ export default function ViewerTab() {
         key={canvasKey}
         frameloop="demand"
         camera={{
-          position: [center[0], center[1] + camDist * 0.55, center[2] + camDist],
+          position: initialPosition,
           fov: 55,
           near: 1,
           far: camDist * 12,
         }}
       >
-        <InitialRender />
+        <CameraRig
+          ref={cameraRef}
+          initialPosition={initialPosition}
+          initialTarget={initialTarget}
+          camDist={camDist}
+          cx={cx}
+          cz={cz}
+          maxHeight={maxHeight}
+        />
         <RoomScene
           positions={positions}
           cx={center[0]}
           cz={center[2]}
           maxHeight={maxHeight}
-        />
-        <OrbitControls
-          target={center}
-          enablePan
-          minDistance={10}
-          maxDistance={camDist * 5}
         />
       </Canvas>
     </div>
