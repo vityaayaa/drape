@@ -20,19 +20,19 @@ export default function App() {
   return (
     <div className="app">
       <div className="tab-content">
-        <div className="tab-panel" style={{ display: activeTab === 'room' ? 'block' : 'none' }}>
+        <div className="tab-panel" data-visible={activeTab === 'room' ? 'true' : 'false'}>
           <RoomTab />
         </div>
-        <div className="tab-panel" style={{ display: activeTab === 'pixelizer' ? 'block' : 'none' }}>
+        <div className="tab-panel" data-visible={activeTab === 'pixelizer' ? 'true' : 'false'}>
           <PixelizerTab />
         </div>
-        <div className="tab-panel" style={{ display: activeTab === 'viewer' ? 'block' : 'none' }}>
+        <div className="tab-panel" data-visible={activeTab === 'viewer' ? 'true' : 'false'}>
           <ViewerTab />
         </div>
-        <div className="tab-panel" style={{ display: activeTab === 'export' ? 'block' : 'none' }}>
+        <div className="tab-panel" data-visible={activeTab === 'export' ? 'true' : 'false'}>
           <ExportTab />
         </div>
-        <div className="tab-panel" style={{ display: activeTab === 'layout' ? 'block' : 'none' }}>
+        <div className="tab-panel" data-visible={activeTab === 'layout' ? 'true' : 'false'}>
           <LayoutTab />
         </div>
       </div>
