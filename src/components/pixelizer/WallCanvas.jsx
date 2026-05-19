@@ -12,8 +12,17 @@ export default function WallCanvas({
   isSelected,         // boolean
   onTap,              // (wallId) => void
   photoCache,
+  worldScale = 1,
+  onPhotoGestureMove,
+  onPhotoGestureScale,
 }) {
   const canvasRef = useRef(null)
+  const worldScaleRef      = useRef(worldScale)
+  const canvasScaleRef     = useRef(canvasScale)
+  const settingsRef        = useRef(null)
+  const gestureMoveRef     = useRef(onPhotoGestureMove)
+  const gestureScaleRef    = useRef(onPhotoGestureScale)
+
   const dims = wallCanvasDimensions(wall, canvasScale)
   const settings = pixelizer.photoSettings[wall.id] ?? null
   const tileColors = pixelizer.tileColors[wall.id] ?? {}
@@ -30,6 +39,76 @@ export default function WallCanvas({
   const groupTotalWidth_mm = photoGroup.length > 0
     ? photoGroup.reduce((sum, w) => sum + (parseFloat(w.length) || 0) * 10, 0)
     : null
+
+  useEffect(() => { worldScaleRef.current  = worldScale },           [worldScale])
+  useEffect(() => { canvasScaleRef.current = canvasScale },          [canvasScale])
+  useEffect(() => { settingsRef.current    = settings },             [settings])
+  useEffect(() => { gestureMoveRef.current = onPhotoGestureMove },   [onPhotoGestureMove])
+  useEffect(() => { gestureScaleRef.current = onPhotoGestureScale }, [onPhotoGestureScale])
+
+  useEffect(() => {
+    if (!showBoundingBox) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+
+    let gesture = null
+
+    function onTouchStart(e) {
+      e.stopPropagation()
+      if (e.touches.length === 1) {
+        gesture = { type: 'pan', x: e.touches[0].clientX, y: e.touches[0].clientY }
+      } else if (e.touches.length === 2) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY,
+        )
+        gesture = {
+          type: 'pinch',
+          startDist: dist,
+          startScale: settingsRef.current?.scale ?? 1,
+        }
+      }
+    }
+
+    function onTouchMove(e) {
+      e.stopPropagation()
+      e.preventDefault()
+      if (!gesture) return
+
+      if (gesture.type === 'pan' && e.touches.length === 1) {
+        const dx_px = e.touches[0].clientX - gesture.x
+        const dy_px = e.touches[0].clientY - gesture.y
+        const factor = worldScaleRef.current * canvasScaleRef.current
+        const dx_mm =  dx_px / factor
+        const dy_mm = -dy_px / factor   // canvas Y is inverted vs physical Y
+        gestureMoveRef.current?.(dx_mm, dy_mm)
+        gesture.x = e.touches[0].clientX
+        gesture.y = e.touches[0].clientY
+      } else if (gesture.type === 'pinch' && e.touches.length === 2) {
+        const dist = Math.hypot(
+          e.touches[0].clientX - e.touches[1].clientX,
+          e.touches[0].clientY - e.touches[1].clientY,
+        )
+        const newScale = gesture.startScale * (dist / gesture.startDist)
+        gestureScaleRef.current?.(Math.max(0.1, Math.min(10, newScale)))
+      }
+    }
+
+    function onTouchEnd(e) {
+      e.stopPropagation()
+      gesture = null
+    }
+
+    canvas.addEventListener('touchstart', onTouchStart, { passive: true })
+    canvas.addEventListener('touchmove',  onTouchMove,  { passive: false })
+    canvas.addEventListener('touchend',   onTouchEnd,   { passive: true })
+
+    return () => {
+      canvas.removeEventListener('touchstart', onTouchStart)
+      canvas.removeEventListener('touchmove',  onTouchMove)
+      canvas.removeEventListener('touchend',   onTouchEnd)
+    }
+  }, [showBoundingBox])
 
   useEffect(() => {
     const canvas = canvasRef.current

@@ -206,6 +206,28 @@ export default function PixelizerTab() {
     setUiMode('navigate')
   }
 
+  function handlePhotoGestureMove(dx_mm, dy_mm) {
+    const activeWalls = walls.filter(w => pixelizer.photoSettings[w.id]?.photoId === activePhotoId)
+    activeWalls.forEach(w => {
+      const ps = pixelizer.photoSettings[w.id]
+      if (!ps) return
+      setPhotoSettings(w.id, {
+        ...ps,
+        offsetX_mm: (ps.offsetX_mm ?? 0) + dx_mm,
+        offsetY_mm: (ps.offsetY_mm ?? 0) + dy_mm,
+      })
+    })
+  }
+
+  function handlePhotoGestureScale(newScale) {
+    const activeWalls = walls.filter(w => pixelizer.photoSettings[w.id]?.photoId === activePhotoId)
+    activeWalls.forEach(w => {
+      const ps = pixelizer.photoSettings[w.id]
+      if (!ps) return
+      setPhotoSettings(w.id, { ...ps, scale: newScale })
+    })
+  }
+
   const handleDeletePhoto = useCallback(async (photoId) => {
     walls.forEach(w => {
       if (pixelizer.photoSettings[w.id]?.photoId === photoId) {
@@ -313,6 +335,8 @@ export default function PixelizerTab() {
           eyeMode={eyeMode}
           onEyeCycle={cycleEye}
           onWallTap={handleWallTap}
+          onPhotoGestureMove={handlePhotoGestureMove}
+          onPhotoGestureScale={handlePhotoGestureScale}
         />
       </div>
 

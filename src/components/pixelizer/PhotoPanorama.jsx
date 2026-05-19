@@ -7,6 +7,7 @@ export default function PhotoPanorama({
   walls, pixelizer, tile, corners, canvasScale,
   uiMode, selectedWallIds, renderParams, activePhotoId,
   photoCache, eyeMode, onEyeCycle, onWallTap,
+  onPhotoGestureMove, onPhotoGestureScale,
 }) {
   const [eyeAnimating, setEyeAnimating] = useState(false)
 
@@ -27,6 +28,8 @@ export default function PhotoPanorama({
   }, 0)
   const vpW = typeof window !== 'undefined' ? window.innerWidth : 375
   const initialScale = Math.min(1, (vpW - 32) / Math.max(totalW, 1))
+
+  const [worldScale, setWorldScale] = useState(initialScale)
 
   function handleEyeCycle() {
     setEyeAnimating(true)
@@ -52,6 +55,7 @@ export default function PhotoPanorama({
         pinch={{ disabled: isAddPhoto }}
         wheel={{ step: 0.1 }}
         doubleClick={{ disabled: true }}
+        onTransform={({ state }) => setWorldScale(state.scale)}
       >
         <TransformComponent wrapperStyle={s.transformWrapper} contentStyle={s.transformContent}>
           <div style={s.worldSpace}>
@@ -78,6 +82,9 @@ export default function PhotoPanorama({
                       isSelected={isAddPhoto && selectedWallIds.includes(wall.id)}
                       onTap={onWallTap}
                       photoCache={photoCache}
+                      worldScale={worldScale}
+                      onPhotoGestureMove={onPhotoGestureMove}
+                      onPhotoGestureScale={onPhotoGestureScale}
                     />
                   </div>
                 </div>
