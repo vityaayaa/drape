@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Box } from 'lucide-react'
 import { useProjectStore } from '../../store/projectStore.js'
 import { Canvas } from '@react-three/fiber'
@@ -17,6 +17,13 @@ export default function ViewerTab() {
   const activeWalls = walls.filter(
     (w) => w.wall_active && parseFloat(w.length) > 0 && parseFloat(w.height) > 0,
   )
+
+  // canvasKey пересоздаёт Canvas при изменении набора активных стен —
+  // это сбрасывает камеру на начальные параметры автоматически
+  const canvasKey = activeWalls.map((w) => w.id).join(',')
+
+  // Sync activeView to 'iso' when canvas remounts (wall set changed)
+  useEffect(() => { setActiveView('iso') }, [canvasKey])
 
   if (activeWalls.length === 0) {
     return (
@@ -40,10 +47,6 @@ export default function ViewerTab() {
   const cz = center[2]
   const initialPosition = [cx + camDist * 0.7, maxHeight / 2 + camDist * 0.5, cz + camDist * 0.7]
   const initialTarget = [cx, maxHeight / 2, cz]
-
-  // canvasKey пересоздаёт Canvas при изменении набора активных стен —
-  // это сбрасывает камеру на начальные параметры автоматически
-  const canvasKey = activeWalls.map((w) => w.id).join(',')
 
   function handleReset() {
     cameraRef.current?.reset()
@@ -101,7 +104,8 @@ const s = {
   },
   canvasWrapper: {
     position: 'absolute',
-    top: 48, bottom: 0, left: 0, right: 0,
+    top: 48, // must match ViewerToolbar height
+    bottom: 0, left: 0, right: 0,
   },
   empty: {
     width: '100%', height: '100%',
