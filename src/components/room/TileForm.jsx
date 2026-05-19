@@ -74,7 +74,7 @@ const s = {
   inputWrap:       { display: 'flex', alignItems: 'center', gap: 4 },
   input:           { width: 84, height: 44, padding: '0 10px', background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#f1f5f9', fontSize: 13, boxSizing: 'border-box' },
   unit:            { fontSize: 12, color: '#475569', width: 22 },
-  colorLabel:      { flex: 1, display: 'flex', alignItems: 'center', cursor: 'pointer', position: 'relative', maxWidth: 110 },
+  colorLabel:      { flex: 1, display: 'flex', alignItems: 'center', cursor: 'pointer', position: 'relative' },
   colorSwatch:     { flex: 1, height: 44, borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)' },
   colorInputHidden: { position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' },
   addBtn:          { marginTop: 16, width: '100%', height: 48, background: 'linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%)', color: '#fff', border: 'none', borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: 'pointer', letterSpacing: '-0.01em', boxShadow: '0 0 24px rgba(124,58,237,0.4), inset 0 1px 0 rgba(255,255,255,0.15)' },
