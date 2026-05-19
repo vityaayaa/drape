@@ -1,0 +1,112 @@
+/* ─────────────────────────────────────────────
+   animations.css — all app-wide CSS animations
+   ───────────────────────────────────────────── */
+
+/* Card enter (WallCard, MaskCard) */
+@keyframes cardSlideDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Card exit (WallCard, MaskCard) */
+@keyframes cardSlideUp {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+
+/* Sheet enter */
+@keyframes sheetEnter {
+  from { transform: translateY(100%); opacity: 0.6; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+/* Sheet exit */
+@keyframes sheetExit {
+  from { transform: translateY(0);    opacity: 1; }
+  to   { transform: translateY(100%); opacity: 0.6; }
+}
+
+/* Button tap scale */
+@keyframes btnTap {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+/* Delete button flash */
+@keyframes deleteFlash {
+  0%   { background: transparent; }
+  40%  { background: rgba(239, 68, 68, 0.2); }
+  100% { background: transparent; }
+}
+
+/* Spinner */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* SavedToast fade */
+@keyframes savedFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Utility classes ── */
+
+.anim-card-enter {
+  animation: cardSlideDown 220ms ease-out both;
+}
+
+.anim-card-exit {
+  animation: cardSlideUp 180ms ease-in both;
+}
+
+.anim-sheet-enter {
+  animation: sheetEnter 250ms ease-out both;
+}
+
+.anim-sheet-exit {
+  animation: sheetExit 200ms ease-in both;
+}
+
+.anim-btn-tap {
+  animation: btnTap 120ms ease-out both;
+}
+
+.anim-delete-flash {
+  animation: deleteFlash 150ms ease-out both;
+}
+
+.anim-saved-in {
+  animation: savedFadeIn 200ms ease-out both;
+}
+
+/* Loading spinner via pseudo-element */
+.btn-pixelize-loading {
+  position: relative;
+  color: transparent !important;
+  pointer-events: none;
+}
+.btn-pixelize-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0 -8px;
+  border: 2px solid rgba(129, 140, 248, 0.3);
+  border-top-color: #818cf8;
+  border-radius: 50%;
+  animation: spin 600ms linear infinite;
+}
+
+/* ─────────────────────────────────────────────
+   prefers-reduced-motion — disable all
+   ───────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
