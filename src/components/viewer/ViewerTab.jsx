@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Box } from 'lucide-react'
 import { useProjectStore } from '../../store/projectStore.js'
 import { Canvas, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
@@ -16,6 +17,7 @@ function InitialRender() {
 export default function ViewerTab() {
   const walls = useProjectStore((s) => s.walls)
   const corners = useProjectStore((s) => s.corners)
+  const setActiveTab = useProjectStore((s) => s.setActiveTab)
 
   const activeWalls = walls.filter(
     (w) => w.wall_active && parseFloat(w.length) > 0 && parseFloat(w.height) > 0,
@@ -25,7 +27,12 @@ export default function ViewerTab() {
   if (activeWalls.length === 0) {
     return (
       <div style={s.empty}>
-        <p style={s.emptyText}>Добавьте хотя бы одну стену с размерами на вкладке «Комната»</p>
+        <Box size={32} color="#818cf8" style={{ opacity: 0.5 }} />
+        <p style={s.emptyTitle}>Нет стен для 3D-просмотра</p>
+        <p style={s.emptySubtitle}>Заполните длину и высоту хотя бы одной стены</p>
+        <button style={s.emptyBtn} onClick={() => setActiveTab('room')}>
+          → Перейти в Комнату
+        </button>
       </div>
     )
   }
@@ -69,7 +76,19 @@ export default function ViewerTab() {
 }
 
 const s = {
-  container: { width: '100%', height: '100%', background: '#0f172a' },
-  empty:     { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f172a' },
-  emptyText: { fontSize: 14, color: '#475569', textAlign: 'center', padding: '0 32px' },
+  container: { width: '100%', height: '100%', background: '#08080f', position: 'relative' },
+  empty: {
+    width: '100%', height: '100%',
+    display: 'flex', flexDirection: 'column',
+    alignItems: 'center', justifyContent: 'center',
+    background: '#08080f', gap: 8, padding: '0 32px',
+  },
+  emptyTitle:    { fontSize: 15, color: '#94a3b8', margin: 0, textAlign: 'center' },
+  emptySubtitle: { fontSize: 12, color: '#64748b', margin: 0, textAlign: 'center', maxWidth: 240 },
+  emptyBtn: {
+    marginTop: 8, height: 40, padding: '0 20px',
+    background: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: 12, color: '#f1f5f9', fontSize: 14, cursor: 'pointer',
+  },
 }
