@@ -1,4 +1,5 @@
 // src/components/pixelizer/ControlsPane.jsx
+import { useState, useEffect } from 'react'
 import PhotoCard from './PhotoCard.jsx'
 import ViewModeControl from './ViewModeControl.jsx'
 
@@ -157,19 +158,35 @@ function TransformPane({ activePhotoId, pixelizer, walls, onPhotoSettingsChange 
 }
 
 function Field({ label, value, step, min, max, decimals = 0, onChange }) {
+  const fmt = (v) => decimals > 0 ? v.toFixed(decimals) : String(Math.round(v))
+  const [localVal, setLocalVal] = useState(() => fmt(value))
+
+  useEffect(() => {
+    setLocalVal(fmt(value))
+  }, [value])
+
+  function commit() {
+    const v = parseFloat(localVal)
+    if (isNaN(v)) {
+      setLocalVal(fmt(value))
+      return
+    }
+    let clamped = v
+    if (min !== undefined) clamped = Math.max(min, clamped)
+    if (max !== undefined) clamped = Math.min(max, clamped)
+    onChange(clamped)
+  }
+
   return (
     <div style={s.fieldGroup}>
       <label style={s.fieldLabel}>{label}</label>
       <input
-        type="number"
-        step={step}
-        min={min}
-        max={max}
-        value={decimals > 0 ? value.toFixed(decimals) : Math.round(value)}
-        onChange={e => {
-          const v = parseFloat(e.target.value)
-          if (!isNaN(v)) onChange(v)
-        }}
+        type="text"
+        inputMode="decimal"
+        value={localVal}
+        onChange={e => setLocalVal(e.target.value)}
+        onBlur={commit}
+        onKeyDown={e => { if (e.key === 'Enter') { e.target.blur() } }}
         style={s.numInput}
       />
     </div>
