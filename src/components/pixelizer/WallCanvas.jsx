@@ -99,6 +99,7 @@ export default function WallCanvas({
       gesture = null
     }
 
+    // passive: true — we only stopPropagation here, never preventDefault; browser gains scroll optimization
     canvas.addEventListener('touchstart', onTouchStart, { passive: true })
     canvas.addEventListener('touchmove',  onTouchMove,  { passive: false })
     canvas.addEventListener('touchend',   onTouchEnd,   { passive: true })
