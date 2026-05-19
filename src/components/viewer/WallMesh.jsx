@@ -18,23 +18,30 @@ export default function WallMesh({ wall, tile, tileColors, position, rotationY }
   }, [canvas])
 
   useEffect(() => {
-    return () => {
-      texture?.dispose()
-    }
+    return () => { texture?.dispose() }
   }, [texture])
 
   const L = parseFloat(wall.length)
   const H = parseFloat(wall.height)
   if (!L || !H) return null
 
+  const dark = '#1e293b'
+
   return (
     <mesh position={position} rotation={[0, rotationY, 0]}>
-      <planeGeometry args={[L, H]} />
+      <boxGeometry args={[L, H, 10]} />
+      {/* торцы и наружная грань — тёмный нейтральный цвет */}
+      <meshStandardMaterial attach="material-0" color={dark} />
+      <meshStandardMaterial attach="material-1" color={dark} />
+      <meshStandardMaterial attach="material-2" color={dark} />
+      <meshStandardMaterial attach="material-3" color={dark} />
+      {/* грань +Z (materialIndex 4) = интерьерная сторона → текстура плитки */}
       <meshStandardMaterial
+        attach="material-4"
         map={texture ?? undefined}
-        color={texture ? '#ffffff' : '#94a3b8'}
-        side={THREE.DoubleSide}
+        color={texture ? '#ffffff' : dark}
       />
+      <meshStandardMaterial attach="material-5" color={dark} />
       {(wall.masks ?? []).map((mask) => (
         <MaskOverlay key={mask.id} mask={mask} wallLength={L} wallHeight={H} />
       ))}

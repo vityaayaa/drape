@@ -10,7 +10,7 @@ export default function MaskOverlay({ mask, wallLength, wallHeight }) {
   const localY = y + h / 2 - wallHeight / 2
 
   return (
-    <mesh position={[localX, localY, 0.5]}>
+    <mesh position={[localX, localY, 5.5]}>
       <planeGeometry args={[w, h]} />
       <meshBasicMaterial
         color={mask.color ?? '#888888'}
