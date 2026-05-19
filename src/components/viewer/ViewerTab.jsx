@@ -60,10 +60,13 @@ export default function ViewerTab() {
           far: camDist * 12,
         }}
       >
-        <ambientLight intensity={0.7} />
-        <directionalLight position={[200, 400, 300]} intensity={0.8} />
         <InitialRender />
-        <RoomScene positions={positions} />
+        <RoomScene
+          positions={positions}
+          cx={center[0]}
+          cz={center[2]}
+          maxHeight={maxHeight}
+        />
         <OrbitControls
           target={center}
           enablePan
