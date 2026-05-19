@@ -12,10 +12,11 @@ export default function RoomScene({ positions, cx, cz, maxHeight }) {
     () => new THREE.GridHelper(20000, 20, '#3a3f52', '#252b3b'),
     [],
   )
-  const gridSmall = useMemo(
-    () => new THREE.GridHelper(20000, 200, '#1e2435', '#181d2b'),
-    [],
-  )
+  const gridSmall = useMemo(() => {
+    const g = new THREE.GridHelper(20000, 200, '#1e2435', '#181d2b')
+    g.position.y = 0.1
+    return g
+  }, [])
 
   return (
     <>
