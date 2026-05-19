@@ -44,9 +44,9 @@ describe('computeWallPositions', () => {
     expect(positions).toHaveLength(2)
     expect(rp(positions[0].position)).toEqual([150, 125, 0])
     expect(round(positions[0].rotationY)).toBe(0)
-    // wall2: dir = 0 - (180-90) = -90°, from (300,0) going -Z
-    // center: x=300+cos(-π/2)*100=300, z=0+sin(-π/2)*100=-100
-    expect(rp(positions[1].position)).toEqual([300, 125, -100])
+    // wall2: dir=-90°, trimmed (i=1), startTrim=10, endTrim=0, renderL=190
+    // startZ = sin(-π/2)*10 = -10, cz = -10 + sin(-π/2)*95 = -105
+    expect(rp(positions[1].position)).toEqual([300, 125, -105])
     expect(round(positions[1].rotationY)).toBe(round(-Math.PI / 2))
   })
 
@@ -57,10 +57,11 @@ describe('computeWallPositions', () => {
     ]
     const corners = { 'w1-w2': { overlap: 'auto', angle: 120 } }
     const { positions } = computeWallPositions(walls, corners)
-    // exterior = 60°, dir = -60° = -π/3
-    // wall2 center: x=300+cos(-π/3)*100=350, z=sin(-π/3)*100≈-86.603
-    expect(round(positions[1].position[0])).toBe(350)
-    expect(round(positions[1].position[2])).toBe(round(-Math.sqrt(3) / 2 * 100))
+    // wall2: dir=-60°, trimmed (i=1), startTrim=10, endTrim=0, renderL=190
+    // startX = 300 + cos(-π/3)*10 = 305, startZ = sin(-π/3)*10 ≈ -8.660
+    // cx = 305 + cos(-π/3)*95 = 352.5, cz = -8.660 + sin(-π/3)*95 ≈ -90.874
+    expect(round(positions[1].position[0])).toBe(352.5)
+    expect(round(positions[1].position[2])).toBe(round(-Math.sqrt(3) / 2 * 105))
   })
 
   it('falls back to 90° when corner is old string format', () => {
@@ -70,7 +71,7 @@ describe('computeWallPositions', () => {
     ]
     const corners = { 'w1-w2': 'auto' }
     const { positions } = computeWallPositions(walls, corners)
-    expect(rp(positions[1].position)).toEqual([300, 125, -100])
+    expect(rp(positions[1].position)).toEqual([300, 125, -105])
   })
 
   it('falls back to 90° when corner key is missing', () => {
@@ -79,7 +80,7 @@ describe('computeWallPositions', () => {
       { id: 'w2', wall_active: true, length: '200', height: '250' },
     ]
     const { positions } = computeWallPositions(walls, {})
-    expect(rp(positions[1].position)).toEqual([300, 125, -100])
+    expect(rp(positions[1].position)).toEqual([300, 125, -105])
   })
 
   it('center is average of all wall centers', () => {
@@ -89,7 +90,7 @@ describe('computeWallPositions', () => {
     ]
     const corners = { 'w1-w2': { overlap: 'auto', angle: 90 } }
     const { center } = computeWallPositions(walls, corners)
-    // wall1 center: (150,125,0), wall2 center: (300,125,-100) → avg: (225,125,-50)
-    expect(rp(center)).toEqual([225, 125, -50])
+    // wall1 center: (150,125,0), wall2 center: (300,125,-105) → avg: (225,125,-52.5)
+    expect(rp(center)).toEqual([225, 125, -52.5])
   })
 })

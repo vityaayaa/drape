@@ -87,7 +87,8 @@ export default function WallSelectSheet({ walls, selectedWallIds, onToggle, onSe
 const s = {
   sheet: {
     position: 'fixed',
-    bottom: 0, left: 0, right: 0,
+    bottom: 'calc(56px + env(safe-area-inset-bottom, 0px))',
+    left: 0, right: 0,
     maxHeight: '75vh',
     display: 'flex',
     flexDirection: 'column',
@@ -149,7 +150,7 @@ const s = {
     display: 'flex', gap: 8,
     flexShrink: 0,
     padding: '12px 0',
-    paddingBottom: 'calc(12px + env(safe-area-inset-bottom, 0px))',
+    paddingBottom: '12px',
     borderTop: '1px solid rgba(255,255,255,0.06)',
   },
   btnAll: {
