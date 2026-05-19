@@ -87,4 +87,14 @@ describe('isFullyInsideMask', () => {
     const masks = [{ x: '0', y: '0', width: '10', height: '10' }]
     expect(isFullyInsideMask(50, 50, masks, 20, 20, 2)).toBe(false)
   })
+
+  it('tiles are excluded from masks that fall entirely above the tile grid start', () => {
+    // tileStartY_mm=50: tiles begin 50mm below ceiling.
+    // Mask at y=0cm, h=3cm (= 0–30mm from ceiling) is entirely above tile row 0.
+    // stepX = stepY = (20+2) = 22mm.
+    // Without floor anchor (tileStartY_mm=0): tile(0,0) IS inside this mask.
+    const masks = [{ x: '0', y: '0', width: '30', height: '3' }]
+    expect(isFullyInsideMask(0, 0, masks, 20, 20, 2, 0)).toBe(true)   // old behaviour
+    expect(isFullyInsideMask(0, 0, masks, 20, 20, 2, 50)).toBe(false) // floor anchor
+  })
 })

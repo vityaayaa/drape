@@ -60,11 +60,15 @@ export async function sampleWallColors(
   const { data: pixels } = ctx.getImageData(0, 0, canvasW, canvasH)
   const result = {}
 
+  const stepY_mm = tileH_mm + groutW_mm
+  const startY_px = canvasH - rows * stepY_mm * canvasScale
+  const tileStartY_mm = startY_px / canvasScale
+
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < columns; col++) {
-      if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm)) continue
+      if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm)) continue
       const rect = tileRect(col, row, tileW_mm, tileH_mm, groutW_mm, canvasScale)
-      result[`${col}_${row}`] = averageColor(pixels, rect.x, rect.y, rect.w, rect.h, canvasW)
+      result[`${col}_${row}`] = averageColor(pixels, rect.x, rect.y + startY_px, rect.w, rect.h, canvasW)
     }
   }
   return result

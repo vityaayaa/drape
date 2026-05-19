@@ -1,6 +1,11 @@
 // src/utils/pixelizerRenderer.js
 import { tileRect, maskRectPx, isFullyInsideMask } from './pixelizerGeometry.js'
 
+function floorAnchorStartY(H, rows, tileH_mm, groutW_mm, canvasScale) {
+  const stepY = (tileH_mm + groutW_mm) * canvasScale
+  return H - rows * stepY
+}
+
 // drawWallPhoto — рисует фото/сетку на canvas одной стены.
 //
 // wallGroupOffsetX_mm: суммарная ширина стен слева от этой в группе (mm)
@@ -55,32 +60,34 @@ export function drawWallPhoto(
 
   // Сетка
   if (gridVisible && columns > 0 && rows > 0) {
-    const tileWpx = tileW_mm * canvasScale
-    const tileHpx = tileH_mm * canvasScale
-    const groutPx = Math.max(1, groutW_mm * canvasScale)
+    const tileWpx = Math.round(tileW_mm * canvasScale)
+    const tileHpx = Math.round(tileH_mm * canvasScale)
+    const groutPx = Math.max(1, Math.round(groutW_mm * canvasScale))
     const stepX = tileWpx + groutPx
     const stepY = tileHpx + groutPx
+    const startY = floorAnchorStartY(H, rows, tileH_mm, groutW_mm, canvasScale)
+    const tileStartY_mm = startY / canvasScale
 
     if (showPhoto) {
-      // photo+grid: полупрозрачные линии шва поверх фото
+      // photo+grid: translucent grout lines over photo
       ctx.save()
       ctx.globalAlpha = 0.28
       ctx.fillStyle = groutColor || '#cccccc'
       for (let col = 0; col < columns; col++) {
-        ctx.fillRect(col * stepX + tileWpx, 0, groutPx, H)
+        ctx.fillRect(Math.round(col * stepX + tileWpx), 0, groutPx, H)
       }
       for (let row = 0; row < rows; row++) {
-        ctx.fillRect(0, row * stepY + tileHpx, W, groutPx)
+        ctx.fillRect(0, Math.round(startY + row * stepY + tileHpx), W, groutPx)
       }
       ctx.restore()
     } else {
-      // grid only: плитки на фоне цвета шва
+      // grid only: tiles on grout background
       ctx.fillStyle = '#3a3a4a'
       for (let row = 0; row < rows; row++) {
         for (let col = 0; col < columns; col++) {
-          if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm)) continue
+          if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm)) continue
           const r = tileRect(col, row, tileW_mm, tileH_mm, groutW_mm, canvasScale)
-          ctx.fillRect(r.x, r.y, r.w, r.h)
+          ctx.fillRect(r.x, Math.round(r.y + startY), r.w, r.h)
         }
       }
     }
@@ -136,12 +143,15 @@ export function drawWallMosaic(ctx, W, H, tileGrid, tileColors, canvasScale) {
   ctx.fillStyle = groutColor || '#cccccc'
   ctx.fillRect(0, 0, W, H)
 
+  const startY = floorAnchorStartY(H, rows, tileH_mm, groutW_mm, canvasScale)
+  const tileStartY_mm = startY / canvasScale
+
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < columns; col++) {
-      if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm)) continue
+      if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm)) continue
       const r = tileRect(col, row, tileW_mm, tileH_mm, groutW_mm, canvasScale)
       ctx.fillStyle = tileColors[`${col}_${row}`] || '#3a3a4a'
-      ctx.fillRect(r.x, r.y, r.w, r.h)
+      ctx.fillRect(r.x, Math.round(r.y + startY), r.w, r.h)
     }
   }
 

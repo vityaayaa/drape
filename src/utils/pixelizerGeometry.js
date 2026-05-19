@@ -43,7 +43,7 @@ export function maskRectPx(mask, scale) {
   }
 }
 
-export function isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm) {
+export function isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm = 0) {
   const stepX = tileW_mm + groutW_mm
   const stepY = tileH_mm + groutW_mm
   return masks.some((m) => {
@@ -54,8 +54,9 @@ export function isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm
     if ([mx, my, mw, mh].some(isNaN)) return false
     const colStart = Math.ceil(mx / stepX)
     const colEnd   = Math.floor((mx + mw) / stepX)
-    const rowStart = Math.ceil(my / stepY)
-    const rowEnd   = Math.floor((my + mh) / stepY)
+    const adjMy    = my - tileStartY_mm
+    const rowStart = Math.ceil(adjMy / stepY)
+    const rowEnd   = Math.floor((adjMy + mh) / stepY)
     return col >= colStart && col < colEnd && row >= rowStart && row < rowEnd
   })
 }
