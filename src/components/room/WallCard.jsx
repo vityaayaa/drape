@@ -1,5 +1,5 @@
 // src/components/room/WallCard.jsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useProjectStore } from '../../store/projectStore.js'
 import MaskCard from './MaskCard.jsx'
 import TileForm from './TileForm.jsx'
@@ -9,6 +9,7 @@ export default function WallCard({ wall, result }) {
   const [showOverride, setShowOverride] = useState(Object.keys(wall.tile_overrides).length > 0)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [touched, setTouched] = useState({})
+  const masksListRef = useRef(null)
 
   useEffect(() => {
     if (!deleteConfirm) return
@@ -111,10 +112,18 @@ export default function WallCard({ wall, result }) {
       <div style={s.masksSection}>
         <div style={s.masksHeader}>
           <span style={s.masksTitle}>Маски-препятствия</span>
-          <button style={s.addMaskBtn} onClick={() => addMask(wall.id)}>+ Добавить</button>
+          <button style={s.addMaskBtn} onClick={() => {
+            addMask(wall.id)
+            setTimeout(() => {
+              const last = masksListRef.current?.lastElementChild
+              last?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+            }, 50)
+          }}>+ Добавить</button>
         </div>
         {wall.masks.length === 0 && <p style={s.empty}>Нет масок</p>}
-        {wall.masks.map(mask => <MaskCard key={mask.id} wallId={wall.id} mask={mask} />)}
+        <div ref={masksListRef}>
+          {wall.masks.map(mask => <MaskCard key={mask.id} wallId={wall.id} mask={mask} />)}
+        </div>
       </div>
     </div>
   )
