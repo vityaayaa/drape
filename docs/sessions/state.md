@@ -745,20 +745,12 @@ CSS transitions + @keyframes (без зависимостей). Framer Motion н
 ### prefers-reduced-motion
 Один блок `@media (prefers-reduced-motion: reduce)` в конце `src/animations.css` — обнуляет все animation-duration и transition-duration до 0.01ms.
 
-### Блок Б (отложенные задачи 1.5)
-- SavedToast: pill «✓ Сохранено», Zustand subscribe + debounce 1500ms, виден 2с, fade — `src/components/shared/SavedToast.jsx`
-- EmptyState: унифицированный компонент `src/components/shared/EmptyState.jsx`, применён в ViewerTab и PixelizerTab
-- Tab fade-in: `data-visible` атрибут + @keyframes tabFadeIn в App.css
-- ExportTab: tease-карточка с wireframe сеткой 5×4 и bullet-фичами
-- LayoutTab: tease-карточка с wireframe таблицей и bullet-фичами
-- RoomTab: flow strip при walls=0, улучшенный empty hint с иконкой LayoutGrid
-
 ### Что НЕ удалось
 - PhotoSheet: exit анимация не добавлена (не упомянута явно в промпте)
 - «+ Добавить стену» tap feedback: оставлен (TileForm не трогался)
 
 ### Контекст для следующей сессии 2.5
-Все shared компоненты в `src/components/shared/` (EmptyState, SavedToast). EmptyState принимает `{icon, title, subtitle, actionLabel, onAction}`. SavedToast уже работает, не трогать. Tab fade-in работает через `data-visible`. Финальная сессия 2.5 — онбординг и пустые состояния (уже частично закрыты EmptyState в ViewerTab и PixelizerTab).
+CSS анимации в `src/animations.css`. Tab fade-in работает через `data-visible` атрибут на `.tab-panel`. Финальная сессия 2.5 — онбординг и пустые состояния: SavedToast, EmptyState, tease-карточки Схема/Укладка, flow strip в Комнате.
 
 ---
 
@@ -766,23 +758,23 @@ CSS transitions + @keyframes (без зависимостей). Framer Motion н
 
 ### Реализованные пустые состояния
 
-- **Комната** (`RoomTab.jsx`): flow strip при `walls.length === 0` (шаги Комната→Фото→3D→Схема→Укладка, текущий подсвечен `#a78bfa`) + улучшенный empty hint с иконкой `LayoutGrid` и подсказкой «Нажмите «Добавить стену» ниже»
+- **Комната** (`RoomTab.jsx`): flow strip при `walls.length === 0` — горизонтальная строка «Комната → Фото → 3D → Схема → Укладка», текущий шаг `#a78bfa`/600, остальные `#334155`. Исчезает после добавления первой стены. Ниже — улучшенный empty hint: иконка `LayoutGrid` 28px + «Стен пока нет» + «Нажмите «Добавить стену» ниже»
 - **Фото** (`PixelizerTab.jsx` → `EmptyNoWalls`): при `walls.length === 0` — компонент `EmptyState` с иконкой `Camera`, заголовком «Сначала добавь стены», subtitle и кнопкой `→ Перейти в Комнату` (`setActiveTab('room')`)
 - **3D** (`ViewerTab.jsx`): при `activeWalls.length === 0` — `EmptyState` с иконкой `Box`, заголовком «Нет стен для 3D-просмотра», subtitle и кнопкой `→ Перейти в Комнату`
-- **Схема** (`ExportTab.jsx`): tease-карточка — иконка `PenLine`, бейдж «В разработке», wireframe сетка 5×4, три bullet-фичи
+- **Схема** (`ExportTab.jsx`): tease-карточка — иконка `PenLine`, бейдж «В разработке», wireframe сетка 5×4 (один тайл подсвечен акцентом), три bullet-фичи
 - **Укладка** (`LayoutTab.jsx`): tease-карточка — иконка `Grid3x3`, бейдж «В разработке», wireframe таблица с примером данных, три bullet-фичи
 
 ### Индикатор автосохранения
 
-Реализован в `SavedToast.jsx`. Zustand subscribe + debounce 1500ms → pill «✓ Сохранено» fixed bottom-right над navbar, виден 2 сек, fade-out 200ms. Показывается только на вкладках room/pixelizer/viewer.
+Реализован: `src/components/shared/SavedToast.jsx`. Zustand subscribe + debounce 1500ms → pill «✓ Сохранено» `position: fixed`, bottom-right над navbar, виден 2 сек, fade-out 200ms. Только на вкладках room/pixelizer/viewer.
 
 ### Прогресс-индикатор
 
-Пропущен — нижний таббар из 5 вкладок уже является прогресс-индикатором. Дублировать визуальный шум.
+Пропущен — нижний таббар из 5 вкладок уже является прогресс-индикатором. Дополнение: вкладки-заглушки (Схема, Укладка) получили цвет `#475569` (мутнее активных) через `data-stub` атрибут в App.jsx.
 
 ### Связи между вкладками (З6)
 
-Все кнопки «→ Перейти в Комнату» работают через `setActiveTab('room')` из Zustand store. Реализовано в ViewerTab и PixelizerTab (`EmptyNoWalls`).
+Компонент `src/components/shared/EmptyState.jsx` — унифицированный: `{icon, title, subtitle, actionLabel, onAction}`. Кнопка `→ Перейти в Комнату` через `setActiveTab('room')` реализована в ViewerTab и PixelizerTab (`EmptyNoWalls`).
 
 ---
 
