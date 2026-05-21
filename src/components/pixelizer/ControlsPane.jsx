@@ -1,11 +1,11 @@
 // src/components/pixelizer/ControlsPane.jsx
 import { useState, useEffect } from 'react'
+import { Plus, Image as ImageIcon } from 'lucide-react'
 import PhotoCard from './PhotoCard.jsx'
-import ViewModeControl from './ViewModeControl.jsx'
 
 export default function ControlsPane({
   uiMode, pixelizerMode, hasPhotos, photoGroups, thumbCache,
-  eyeMode, onEyeMode, onAddPhoto, onOpacityChange, onEditPhoto, onDeletePhoto,
+  onAddPhoto, onOpacityChange, onEditPhoto, onDeletePhoto,
   pixelizer, walls, onPhotoSettingsChange, activePhotoId,
 }) {
   if (uiMode === 'transform') {
@@ -21,21 +21,17 @@ export default function ControlsPane({
     return <EmptyPhotos onAddPhoto={onAddPhoto} />
   }
 
-  const isMosaic = pixelizerMode === 'mosaic'
-
   return (
     <div style={s.root}>
-      {/* Section: photos */}
       <div style={s.sectionHeader}>
-        <span style={s.sectionTitle}>Фото</span>
-        <button style={s.addBtn} onClick={onAddPhoto}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
+        <span style={s.sectionTitle}>ФОТО</span>
+        <button style={s.addMoreBtn} onClick={onAddPhoto}>
+          <Plus size={14} />
+          <span>ещё фото</span>
         </button>
       </div>
 
-      {photoGroups.map(group => (
+      {photoGroups.map((group) => (
         <PhotoCard
           key={group.photoId}
           group={group}
@@ -45,20 +41,6 @@ export default function ControlsPane({
           onDelete={onDeletePhoto}
         />
       ))}
-
-      {/* Section: view mode */}
-      {(hasPhotos || isMosaic) && (
-        <>
-          <div style={{ ...s.sectionHeader, marginTop: 6 }}>
-            <span style={s.sectionTitle}>Вид</span>
-          </div>
-          <ViewModeControl
-            eyeMode={eyeMode}
-            onChange={onEyeMode}
-            isMosaic={isMosaic}
-          />
-        </>
-      )}
     </div>
   )
 }
@@ -66,16 +48,14 @@ export default function ControlsPane({
 function EmptyPhotos({ onAddPhoto }) {
   return (
     <div style={s.empty}>
-      <svg width="64" height="48" viewBox="0 0 64 48" fill="none" style={{ marginBottom: 14, opacity: 0.3 }}>
-        <rect x="2" y="6" width="18" height="40" rx="2" stroke="#818cf8" strokeWidth="1.5"/>
-        <rect x="24" y="14" width="16" height="32" rx="2" stroke="#818cf8" strokeWidth="1.5"/>
-        <rect x="44" y="2" width="18" height="44" rx="2" stroke="#818cf8" strokeWidth="1.5"/>
-        <line x1="2" y1="46" x2="62" y2="46" stroke="#818cf8" strokeWidth="1" strokeDasharray="2 3"/>
-      </svg>
+      <div style={s.emptyIconWrap}>
+        <ImageIcon size={36} color="#a78bfa" strokeWidth={1.5} />
+      </div>
       <p style={s.emptyTitle}>Нет фотографий</p>
       <p style={s.emptyHint}>Наложите фото на развёртку и пикселизируйте</p>
       <button style={s.emptyBtn} onClick={onAddPhoto}>
-        + Добавить фото
+        <Plus size={16} />
+        Добавить фото
       </button>
     </div>
   )
@@ -83,7 +63,7 @@ function EmptyPhotos({ onAddPhoto }) {
 
 function TransformPane({ activePhotoId, pixelizer, walls, onPhotoSettingsChange }) {
   const activeWalls = walls.filter(
-    w => pixelizer.photoSettings[w.id]?.photoId === activePhotoId
+    (w) => pixelizer.photoSettings[w.id]?.photoId === activePhotoId
   )
   const firstWall = activeWalls[0]
   const ps = firstWall ? pixelizer.photoSettings[firstWall.id] : null
@@ -91,62 +71,76 @@ function TransformPane({ activePhotoId, pixelizer, walls, onPhotoSettingsChange 
   if (!ps) return <div style={s.transformEmpty}>Выберите фото</div>
 
   function update(field, value) {
-    activeWalls.forEach(w => {
+    activeWalls.forEach((w) => {
       const settings = pixelizer.photoSettings[w.id]
       if (settings) onPhotoSettingsChange(w.id, { ...settings, [field]: value })
     })
   }
 
   return (
-    <div style={s.root}>
+    <div style={s.transformRoot}>
       <div style={s.sectionHeader}>
-        <span style={s.sectionTitle}>Позиционирование</span>
+        <span style={s.sectionTitle}>ПОЗИЦИОНИРОВАНИЕ</span>
       </div>
 
-      <div style={s.transformGrid}>
-        <Field label="Сдвиг X (мм)" value={ps.offsetX_mm} step={10}
-          onChange={v => update('offsetX_mm', v)} />
-        <Field label="Сдвиг Y (мм)" value={ps.offsetY_mm} step={10}
-          onChange={v => update('offsetY_mm', v)} />
-        <Field label="Масштаб" value={ps.scale} step={0.05} min={0.1} max={10} decimals={2}
-          onChange={v => update('scale', v)} />
-        <div style={s.fieldGroup}>
-          <label style={s.fieldLabel}>Прозрачность</label>
-          <input
-            type="range" min="0" max="1" step="0.05"
-            value={ps.opacity}
-            onChange={e => update('opacity', parseFloat(e.target.value))}
-            style={s.rangeInput}
-          />
-          <span style={s.fieldValue}>{Math.round(ps.opacity * 100)}%</span>
-        </div>
+      <div style={s.stack}>
+        <NumberField
+          label="Сдвиг X (мм)"
+          value={ps.offsetX_mm}
+          step={10}
+          onChange={(v) => update('offsetX_mm', v)}
+        />
+        <NumberField
+          label="Сдвиг Y (мм)"
+          value={ps.offsetY_mm}
+          step={10}
+          onChange={(v) => update('offsetY_mm', v)}
+        />
+        <NumberField
+          label="Масштаб"
+          value={ps.scale}
+          step={0.05}
+          min={0.1}
+          max={10}
+          decimals={2}
+          onChange={(v) => update('scale', v)}
+        />
+        <RangeField
+          label="Прозрачность"
+          value={ps.opacity}
+          min={0}
+          max={1}
+          step={0.05}
+          display={(v) => `${Math.round(v * 100)}%`}
+          onChange={(v) => update('opacity', v)}
+        />
       </div>
 
       <div style={s.sectionHeader}>
-        <span style={s.sectionTitle}>Коррекция</span>
+        <span style={s.sectionTitle}>КОРРЕКЦИЯ</span>
       </div>
 
-      <div style={s.correctionGrid}>
+      <div style={s.stack}>
         <RangeField
           label="Яркость"
           value={ps.brightness ?? 1}
           min={0.5} max={2} step={0.05}
-          display={v => `${Math.round(v * 100)}%`}
-          onChange={v => update('brightness', v)}
+          display={(v) => `${Math.round(v * 100)}%`}
+          onChange={(v) => update('brightness', v)}
         />
         <RangeField
           label="Контраст"
           value={ps.contrast ?? 1}
           min={0.5} max={2} step={0.05}
-          display={v => `${Math.round(v * 100)}%`}
-          onChange={v => update('contrast', v)}
+          display={(v) => `${Math.round(v * 100)}%`}
+          onChange={(v) => update('contrast', v)}
         />
         <RangeField
           label="Насыщенность"
           value={ps.saturation ?? 1}
           min={0} max={3} step={0.05}
-          display={v => `${Math.round(v * 100)}%`}
-          onChange={v => update('saturation', v)}
+          display={(v) => `${Math.round(v * 100)}%`}
+          onChange={(v) => update('saturation', v)}
         />
       </div>
 
@@ -157,13 +151,11 @@ function TransformPane({ activePhotoId, pixelizer, walls, onPhotoSettingsChange 
   )
 }
 
-function Field({ label, value, step, min, max, decimals = 0, onChange }) {
-  const fmt = (v) => decimals > 0 ? v.toFixed(decimals) : String(Math.round(v))
+function NumberField({ label, value, step, min, max, decimals = 0, onChange }) {
+  const fmt = (v) => (decimals > 0 ? v.toFixed(decimals) : String(Math.round(v)))
   const [localVal, setLocalVal] = useState(() => fmt(value))
 
-  useEffect(() => {
-    setLocalVal(fmt(value))
-  }, [value])
+  useEffect(() => { setLocalVal(fmt(value)) }, [value])
 
   function commit() {
     const v = parseFloat(localVal)
@@ -178,15 +170,15 @@ function Field({ label, value, step, min, max, decimals = 0, onChange }) {
   }
 
   return (
-    <div style={s.fieldGroup}>
+    <div style={s.fieldRow}>
       <label style={s.fieldLabel}>{label}</label>
       <input
         type="text"
         inputMode="decimal"
         value={localVal}
-        onChange={e => setLocalVal(e.target.value)}
+        onChange={(e) => setLocalVal(e.target.value)}
         onBlur={commit}
-        onKeyDown={e => { if (e.key === 'Enter') { e.target.blur() } }}
+        onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur() }}
         style={s.numInput}
       />
     </div>
@@ -195,15 +187,16 @@ function Field({ label, value, step, min, max, decimals = 0, onChange }) {
 
 function RangeField({ label, value, min, max, step, display, onChange }) {
   return (
-    <div style={s.fieldGroup}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={s.rangeBlock}>
+      <div style={s.rangeHeader}>
         <label style={s.fieldLabel}>{label}</label>
         <span style={s.fieldValue}>{display(value)}</span>
       </div>
       <input
-        type="range" min={min} max={max} step={step}
+        type="range"
+        min={min} max={max} step={step}
         value={value}
-        onChange={e => onChange(parseFloat(e.target.value))}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
         style={s.rangeInput}
       />
     </div>
@@ -212,53 +205,98 @@ function RangeField({ label, value, min, max, step, display, onChange }) {
 
 const s = {
   root: { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingTop: 6, paddingBottom: 8 },
+  transformRoot: { flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', paddingTop: 6, paddingBottom: 8 },
   sectionHeader: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '10px 16px 6px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '10px 16px 8px',
   },
-  sectionTitle: { fontSize: 12, fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' },
-  addBtn: {
-    width: 28, height: 28,
-    background: 'rgba(129,140,248,0.15)',
-    border: '1px solid rgba(129,140,248,0.30)',
-    borderRadius: 7,
-    color: '#818cf8',
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: 700,
+    color: 'var(--text-disabled)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+  },
+  addMoreBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    height: 32,
+    padding: '0 12px',
+    background: 'var(--accent-soft)',
+    border: '1px solid var(--accent-soft-border)',
+    borderRadius: 999,
+    color: 'var(--accent-light)',
+    fontSize: 12,
+    fontWeight: 600,
     cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   empty: {
     flex: 1,
-    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: '24px 32px',
     textAlign: 'center',
   },
-  emptyTitle: { fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.45)', marginBottom: 6 },
-  emptyHint: { fontSize: 13, color: 'rgba(255,255,255,0.25)', lineHeight: 1.5, marginBottom: 20, maxWidth: 220 },
-  emptyBtn: {
-    padding: '10px 24px',
-    background: 'rgba(129,140,248,0.12)',
-    border: '1px solid rgba(129,140,248,0.30)',
-    borderRadius: 12,
-    color: '#818cf8',
-    fontSize: 14,
-    fontWeight: 500,
-    cursor: 'pointer',
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: '50%',
+    background: 'radial-gradient(circle, rgba(124,58,237,0.20), transparent 70%)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
   },
-  transformGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0 16px 12px' },
-  correctionGrid: { display: 'flex', flexDirection: 'column', gap: 10, padding: '0 16px 12px' },
-  transformEmpty: { padding: 24, color: '#475569', fontSize: 14, textAlign: 'center' },
-  fieldGroup: { display: 'flex', flexDirection: 'column' },
-  fieldLabel: { fontSize: 11, color: '#475569', marginBottom: 4 },
-  fieldValue: { fontSize: 11, color: '#64748b', marginTop: 2 },
-  numInput: {
-    padding: '8px 10px',
-    background: 'rgba(0,0,0,0.30)',
-    border: '1px solid rgba(255,255,255,0.09)',
-    borderRadius: 8,
+  emptyTitle: { fontSize: 16, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 },
+  emptyHint: { fontSize: 13, color: 'var(--text-hint)', lineHeight: 1.5, marginBottom: 20, maxWidth: 260 },
+  emptyBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8,
+    padding: '0 24px',
+    height: 44,
+    background: 'var(--accent-grad)',
+    border: 'none',
+    borderRadius: 12,
     color: '#f1f5f9',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+    boxShadow: 'var(--accent-shadow)',
+  },
+  stack: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 10,
+    padding: '0 16px 12px',
+  },
+  transformEmpty: { padding: 24, color: 'var(--text-disabled)', fontSize: 14, textAlign: 'center' },
+  fieldRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+  },
+  fieldLabel: { fontSize: 13, color: 'var(--text-secondary)', flex: 1 },
+  fieldValue: { fontSize: 12, color: 'var(--accent-light)', fontVariantNumeric: 'tabular-nums', fontWeight: 600 },
+  numInput: {
+    width: 110,
+    padding: '10px 12px',
+    background: 'rgba(0,0,0,0.30)',
+    border: '1px solid var(--border-strong)',
+    borderRadius: 10,
+    color: 'var(--text-primary)',
     fontSize: 13,
     outline: 'none',
+    textAlign: 'right',
+    fontVariantNumeric: 'tabular-nums',
   },
-  rangeInput: { width: '100%', accentColor: '#818cf8', marginTop: 6, cursor: 'pointer' },
-  gestureHint: { fontSize: 11, color: '#334155', textAlign: 'center', padding: '0 16px', lineHeight: 1.5 },
+  rangeBlock: { display: 'flex', flexDirection: 'column', gap: 4 },
+  rangeHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  rangeInput: { width: '100%', accentColor: 'var(--accent-light)', marginTop: 4, cursor: 'pointer' },
+  gestureHint: { fontSize: 11, color: 'var(--text-disabled)', textAlign: 'center', padding: '0 16px 12px', lineHeight: 1.5 },
 }

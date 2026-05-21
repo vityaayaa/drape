@@ -1,51 +1,57 @@
 // src/components/pixelizer/PhotoCard.jsx
+import { Pencil, Trash2 } from 'lucide-react'
+
 export default function PhotoCard({ group, thumbUrl, onOpacityChange, onEdit, onDelete }) {
   const { photoId, walls, settings } = group
   const opacity = settings?.opacity ?? 1.0
-  const wallNames = walls.map(w => w.name).join(', ')
+  const wallNames = walls.map((w) => w.name).join(', ')
 
   return (
     <div style={s.card}>
-      <div style={s.top}>
-        {/* Thumbnail */}
-        <div style={s.thumb}>
-          {thumbUrl
-            ? <img src={thumbUrl} alt="" style={s.thumbImg} />
-            : <div style={s.thumbPlaceholder} />
-          }
+      {/* Квадрат с фото (object-fit: contain → letterbox для горизонтальных,
+          object-fit: cover не используем чтобы не шакалить вертикальные кропом сверху/снизу).
+          Используем cover для обрезки строго до квадрата — это и есть требование. */}
+      <div style={s.thumbWrap}>
+        {thumbUrl ? (
+          <img src={thumbUrl} alt="" style={s.thumbImg} />
+        ) : (
+          <div style={s.thumbPlaceholder} />
+        )}
+      </div>
+
+      <div style={s.body}>
+        <div style={s.metaRow}>
+          <span style={s.metaLabel}>Стены</span>
+          <span style={s.metaValue}>{wallNames || '—'}</span>
         </div>
 
-        {/* Info */}
-        <div style={s.info}>
-          <div style={s.wallNames}>{wallNames}</div>
-          <div style={s.opacityRow}>
-            <span style={s.opacityLabel}>Прозрачность</span>
-            <span style={s.opacityValue}>{Math.round(opacity * 100)}%</span>
-          </div>
-          <input
-            type="range"
-            min="0" max="1" step="0.05"
-            value={opacity}
-            onChange={e => onOpacityChange(photoId, parseFloat(e.target.value))}
-            style={s.slider}
-          />
+        <div style={s.opacityRow}>
+          <span style={s.opacityLabel}>Прозрачность</span>
+          <span style={s.opacityValue}>{Math.round(opacity * 100)}%</span>
         </div>
+        <input
+          type="range"
+          min="0" max="1" step="0.05"
+          value={opacity}
+          onChange={(e) => onOpacityChange(photoId, parseFloat(e.target.value))}
+          style={s.slider}
+        />
 
-        {/* Buttons */}
-        <div style={s.btns}>
-          <button style={s.iconBtn} onClick={() => onEdit(photoId)} title="Редактировать">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-              <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
+        <div style={s.actions}>
+          <button
+            style={s.editBtn}
+            onClick={() => onEdit(photoId)}
+            aria-label="Редактировать фото"
+          >
+            <Pencil size={16} />
+            <span>Редактировать</span>
           </button>
-          <button style={{ ...s.iconBtn, ...s.deleteBtn }} onClick={() => onDelete(photoId)} title="Удалить фото">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14H6L5 6"/>
-              <path d="M10 11v6M14 11v6"/>
-              <path d="M9 6V4h6v2"/>
-            </svg>
+          <button
+            style={s.deleteBtn}
+            onClick={() => onDelete(photoId)}
+            aria-label="Удалить фото"
+          >
+            <Trash2 size={16} />
           </button>
         </div>
       </div>
@@ -53,42 +59,93 @@ export default function PhotoCard({ group, thumbUrl, onOpacityChange, onEdit, on
   )
 }
 
+const THUMB_SIZE = 96
+
 const s = {
   card: {
-    margin: '0 16px 8px',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.07)',
-    borderRadius: 12,
-    padding: '10px 12px',
+    margin: '0 16px 10px',
+    background: 'var(--surface-2)',
+    border: '1px solid var(--border)',
+    borderRadius: 14,
+    padding: 12,
+    display: 'flex',
+    gap: 12,
+    alignItems: 'stretch',
   },
-  top: { display: 'flex', alignItems: 'flex-start', gap: 10 },
-  thumb: {
-    width: 48, height: 36,
-    borderRadius: 6,
-    overflow: 'hidden',
-    background: 'rgba(255,255,255,0.06)',
+  thumbWrap: {
+    width: THUMB_SIZE,
+    height: THUMB_SIZE,
     flexShrink: 0,
+    borderRadius: 10,
+    overflow: 'hidden',
+    background: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  thumbImg: { width: '100%', height: '100%', objectFit: 'cover' },
-  thumbPlaceholder: { width: '100%', height: '100%', background: '#2a2a3a' },
-  info: { flex: 1, minWidth: 0 },
-  wallNames: { fontSize: 12, color: '#94a3b8', fontWeight: 500, marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-  opacityRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
-  opacityLabel: { fontSize: 11, color: '#475569' },
-  opacityValue:  { fontSize: 11, color: '#64748b', fontVariantNumeric: 'tabular-nums' },
-  slider: { width: '100%', accentColor: '#818cf8', cursor: 'pointer' },
-  btns: { display: 'flex', flexDirection: 'column', gap: 4, flexShrink: 0, alignSelf: 'center' },
-  iconBtn: {
-    width: 32, height: 32,
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.09)',
-    borderRadius: 8,
-    color: '#64748b',
+  thumbImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',  // обрезаем квадратом, не шакалим
+    display: 'block',
+  },
+  thumbPlaceholder: { width: '100%', height: '100%', background: 'rgba(255,255,255,0.05)' },
+  body: {
+    flex: 1,
+    minWidth: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 6,
+  },
+  metaRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    gap: 6,
+    minWidth: 0,
+  },
+  metaLabel: { fontSize: 11, color: 'var(--text-disabled)', textTransform: 'uppercase', letterSpacing: '0.06em', flexShrink: 0 },
+  metaValue: {
+    fontSize: 12,
+    color: 'var(--text-secondary)',
+    fontWeight: 500,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    minWidth: 0,
+  },
+  opacityRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  opacityLabel: { fontSize: 11, color: 'var(--text-hint)' },
+  opacityValue: { fontSize: 11, color: 'var(--text-secondary)', fontVariantNumeric: 'tabular-nums', fontWeight: 600 },
+  slider: { width: '100%', accentColor: 'var(--accent-light)', cursor: 'pointer' },
+  actions: {
+    display: 'flex',
+    gap: 6,
+    marginTop: 4,
+  },
+  editBtn: {
+    flex: 1,
+    height: 40,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+    background: 'var(--accent-soft)',
+    border: '1px solid var(--accent-soft-border)',
+    borderRadius: 10,
+    color: 'var(--accent-light)',
+    fontSize: 13, fontWeight: 600,
     cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
   },
   deleteBtn: {
-    color: 'rgba(248,113,113,0.7)',
-    border: '1px solid rgba(248,113,113,0.15)',
+    width: 40, height: 40,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'rgba(239,68,68,0.10)',
+    border: '1px solid rgba(239,68,68,0.30)',
+    borderRadius: 10,
+    color: '#f87171',
+    cursor: 'pointer',
+    flexShrink: 0,
   },
 }

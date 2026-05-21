@@ -1,6 +1,7 @@
 // src/components/pixelizer/PhotoPanorama.jsx
 import { useState } from 'react'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { Layers } from 'lucide-react'
 import WallCanvas from './WallCanvas.jsx'
 
 export default function PhotoPanorama({
@@ -8,6 +9,7 @@ export default function PhotoPanorama({
   uiMode, selectedWallIds, renderParams, activePhotoId,
   photoCache, eyeMode, onEyeCycle, onWallTap,
   onPhotoGestureMove, onPhotoGestureScale,
+  onShowWalls,
 }) {
   const [eyeAnimating, setEyeAnimating] = useState(false)
 
@@ -51,8 +53,10 @@ export default function PhotoPanorama({
         maxScale={8}
         limitToBounds={false}
         centerOnInit={true}
+        centerZoomedOut={false}
+        disablePadding={true}
         panning={{ disabled: isAddPhoto, velocityDisabled: false }}
-        pinch={{ disabled: isAddPhoto }}
+        pinch={{ disabled: isAddPhoto, step: 5 }}
         wheel={{ step: 0.1 }}
         doubleClick={{ disabled: true }}
         onTransform={({ state }) => setWorldScale(state.scale)}
@@ -94,15 +98,28 @@ export default function PhotoPanorama({
         </TransformComponent>
       </TransformWrapper>
 
-      {/* Кнопка «глаз» */}
-      <button
-        style={s.eyeBtn}
-        className={eyeAnimating ? 'eye-pop' : ''}
-        onClick={handleEyeCycle}
-        title="Режим отображения"
-      >
-        {eyeIcon}
-      </button>
+      {/* Кнопки оверлея: глаз + стены */}
+      <div style={s.overlayBtns}>
+        <button
+          style={s.eyeBtn}
+          className={eyeAnimating ? 'eye-pop' : ''}
+          onClick={handleEyeCycle}
+          title="Режим отображения"
+          aria-label="Режим отображения"
+        >
+          {eyeIcon}
+        </button>
+        {onShowWalls && (
+          <button
+            style={s.eyeBtn}
+            onClick={onShowWalls}
+            title="Видимость стен"
+            aria-label="Видимость стен"
+          >
+            <Layers size={18} />
+          </button>
+        )}
+      </div>
 
       {/* Метка текущего режима вида */}
       <EyeLabel eyeMode={eyeMode} />
@@ -186,8 +203,7 @@ const s = {
     height: '100%',
   },
   transformContent: {
-    display: 'flex',
-    alignItems: 'flex-end',
+    display: 'block',
   },
   worldSpace: {
     display: 'flex',
@@ -203,25 +219,30 @@ const s = {
     background: 'rgba(255,255,255,0.05)',
     pointerEvents: 'none',
   },
-  eyeBtn: {
+  overlayBtns: {
     position: 'absolute',
     top: 12, right: 12,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    zIndex: 10,
+  },
+  eyeBtn: {
     width: 40, height: 40,
     background: 'rgba(8,8,15,0.72)',
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
-    border: '1px solid rgba(255,255,255,0.10)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 11,
-    color: '#94a3b8',
+    color: 'var(--text-secondary)',
     cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    zIndex: 10,
   },
   eyeLabel: {
     position: 'absolute',
     top: 22, right: 60,
     fontSize: 11,
-    color: 'rgba(255,255,255,0.35)',
+    color: 'var(--text-hint)',
     pointerEvents: 'none',
     whiteSpace: 'nowrap',
     zIndex: 10,

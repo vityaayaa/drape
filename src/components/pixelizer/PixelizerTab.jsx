@@ -12,8 +12,8 @@ import ActionBar from './ActionBar.jsx'
 import WallSelectSheet from './WallSelectSheet.jsx'
 import WallsSheet from './WallsSheet.jsx'
 import Toast from './Toast.jsx'
-import EmptyState from '../shared/EmptyState.jsx'
-import { Camera } from 'lucide-react'
+import EmptyState from '../ui/EmptyState.jsx'
+import { LayoutGrid } from 'lucide-react'
 
 export default function PixelizerTab() {
   const {
@@ -361,6 +361,7 @@ export default function PixelizerTab() {
           onWallTap={handleWallTap}
           onPhotoGestureMove={handlePhotoGestureMove}
           onPhotoGestureScale={handlePhotoGestureScale}
+          onShowWalls={uiMode === 'navigate' ? () => setShowWalls(true) : null}
         />
       </div>
 
@@ -374,8 +375,6 @@ export default function PixelizerTab() {
             hasPhotos={hasPhotos}
             photoGroups={photoGroups}
             thumbCache={thumbCache}
-            eyeMode={eyeMode}
-            onEyeMode={setEyeMode}
             onAddPhoto={handleAddPhoto}
             onOpacityChange={handleOpacity}
             onEditPhoto={handleEditPhoto}
@@ -395,8 +394,6 @@ export default function PixelizerTab() {
             hasPhotos={hasPhotos}
             anyStale={anyStale}
             sampling={sampling}
-            onAddPhoto={handleAddPhoto}
-            onShowWalls={() => setShowWalls(true)}
             onPixelize={handlePixelize}
             onDone={handleTransformDone}
             onDelete={handleTransformDelete}
@@ -427,17 +424,15 @@ export default function PixelizerTab() {
 }
 
 function EmptyNoWalls() {
-  const { setActiveTab } = useProjectStore()
+  const setActiveTab = useProjectStore((s) => s.setActiveTab)
   return (
-    <div style={{ position: 'relative', flex: 1 }}>
-      <EmptyState
-        icon={<Camera size={32} color="#818cf8" style={{ opacity: 0.5 }} />}
-        title="Сначала добавь стены"
-        subtitle="Фото накладывается только когда есть стена с размерами"
-        actionLabel="→ Перейти в Комнату"
-        onAction={() => setActiveTab('room')}
-      />
-    </div>
+    <EmptyState
+      icon={LayoutGrid}
+      title="Сначала добавьте стены"
+      description="Добавьте стены в разделе «Комната» — потом сможете накладывать фото."
+      actionLabel="Перейти в Комнату"
+      onAction={() => setActiveTab('room')}
+    />
   )
 }
 
@@ -449,9 +444,9 @@ const s = {
     overflow: 'hidden',
   },
   panorama: {
-    height: '40vh',
-    minHeight: 160,
-    maxHeight: 280,
+    height: '50vh',
+    minHeight: 240,
+    maxHeight: '60vh',
     flexShrink: 0,
   },
   bottom: {
