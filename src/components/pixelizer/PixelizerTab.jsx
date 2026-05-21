@@ -6,6 +6,7 @@ import { computeScale } from '../../utils/pixelizerGeometry.js'
 import { wallCanvasDimensions } from '../../utils/pixelizerGeometry.js'
 import { calculateGrid } from '../../utils/roomGeometry.js'
 import { sampleWallColors } from '../../utils/pixelizerSampler.js'
+import { resolveWallTile } from '../../utils/schemaRenderer.js'
 import PhotoPanorama from './PhotoPanorama.jsx'
 import ControlsPane from './ControlsPane.jsx'
 import ActionBar from './ActionBar.jsx'
@@ -255,44 +256,49 @@ export default function PixelizerTab() {
   async function handlePixelize() {
     if (!hasPhotos) { showToast('Добавьте фото для пикселизации'); return }
     setSampling(true)
+    try {
+      const gridResults = calculateGrid(tile, walls, corners)
+      const targets = walls.filter(w => {
+        const ps = pixelizer.photoSettings[w.id]
+        return ps?.photoId && (pixelizer.tileColorsStale[w.id] !== false)
+      })
 
-    const gridResults = calculateGrid(tile, walls, corners)
-    const targets = walls.filter(w => {
-      const ps = pixelizer.photoSettings[w.id]
-      return ps?.photoId && (pixelizer.tileColorsStale[w.id] !== false)
-    })
+      for (const wall of targets) {
+        const idx = walls.findIndex(w => w.id === wall.id)
+        const gr  = gridResults[idx]
+        if (!gr) continue
+        const ps   = pixelizer.photoSettings[wall.id]
+        const blob = await loadPhoto(ps.photoId)
+        if (!blob) continue
+        const dims  = wallCanvasDimensions(wall, canvasScale)
+        const resolved = resolveWallTile(wall, tile)
+        const tileGrid = {
+          columns:  gr.columns,
+          rows:     gr.rows,
+          tileW_mm:  resolved.tileW / 10,
+          tileH_mm:  resolved.tileH / 10,
+          groutW_mm: resolved.groutW / 10,
+          masks:     wall.masks,
+        }
+        const photoGroup = walls.filter(w => pixelizer.photoSettings[w.id]?.photoId === ps.photoId)
+        const wallIndexInGroup = photoGroup.findIndex(w => w.id === wall.id)
+        const wallGroupOffsetX_mm = photoGroup
+          .slice(0, wallIndexInGroup)
+          .reduce((sum, w) => sum + (parseFloat(w.length) || 0) * 10, 0)
+        const groupTotalWidth_mm = photoGroup
+          .reduce((sum, w) => sum + (parseFloat(w.length) || 0) * 10, 0)
 
-    for (const wall of targets) {
-      const idx = walls.findIndex(w => w.id === wall.id)
-      const gr  = gridResults[idx]
-      if (!gr) continue
-      const ps   = pixelizer.photoSettings[wall.id]
-      const blob = await loadPhoto(ps.photoId)
-      if (!blob) continue
-      const dims  = wallCanvasDimensions(wall, canvasScale)
-      const tileGrid = {
-        columns:  gr.columns,
-        rows:     gr.rows,
-        tileW_mm:  parseFloat(tile.tile_width)  || 0,
-        tileH_mm:  parseFloat(tile.tile_height) || 0,
-        groutW_mm: parseFloat(tile.grout_width) || 0,
-        masks:     wall.masks,
+        const colors = await sampleWallColors(blob, ps, tileGrid, dims.width, dims.height, canvasScale, wallGroupOffsetX_mm, groupTotalWidth_mm)
+        setTileColors(wall.id, colors)
       }
-      const photoGroup = walls.filter(w => pixelizer.photoSettings[w.id]?.photoId === ps.photoId)
-      const wallIndexInGroup = photoGroup.findIndex(w => w.id === wall.id)
-      const wallGroupOffsetX_mm = photoGroup
-        .slice(0, wallIndexInGroup)
-        .reduce((sum, w) => sum + (parseFloat(w.length) || 0) * 10, 0)
-      const groupTotalWidth_mm = photoGroup
-        .reduce((sum, w) => sum + (parseFloat(w.length) || 0) * 10, 0)
 
-      const colors = await sampleWallColors(blob, ps, tileGrid, dims.width, dims.height, canvasScale, wallGroupOffsetX_mm, groupTotalWidth_mm)
-      setTileColors(wall.id, colors)
+      setPixelizerMode('mosaic')
+      setEyeMode('mosaic')
+    } catch (e) {
+      showToast('Ошибка пикселизации: ' + e.message)
+    } finally {
+      setSampling(false)
     }
-
-    setPixelizerMode('mosaic')
-    setEyeMode('mosaic')
-    setSampling(false)
   }
 
   // ── Прозрачность фото ──

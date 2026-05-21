@@ -3,6 +3,7 @@ import { useRef, useEffect } from 'react'
 import { calculateGrid } from '../../utils/roomGeometry.js'
 import { wallCanvasDimensions } from '../../utils/pixelizerGeometry.js'
 import { drawWallPhoto, drawWallMosaic, drawWallPlaceholder, drawBoundingBox } from '../../utils/pixelizerRenderer.js'
+import { resolveWallTile } from '../../utils/schemaRenderer.js'
 
 export default function WallCanvas({
   wall, tile, corners, walls, pixelizer, canvasScale,
@@ -116,6 +117,13 @@ export default function WallCanvas({
     if (!canvas) return
     const ctx = canvas.getContext('2d')
 
+    const dpr = window.devicePixelRatio || 1
+    canvas.width = dims.width * dpr
+    canvas.height = dims.height * dpr
+    canvas.style.width = dims.width + 'px'
+    canvas.style.height = dims.height + 'px'
+    ctx.scale(dpr, dpr)
+
     if (dims.placeholder) {
       drawWallPlaceholder(ctx, dims.width, dims.height, wall.name)
       return
@@ -125,13 +133,14 @@ export default function WallCanvas({
     const wallIndex = walls.findIndex(w => w.id === wall.id)
     const gridResult = gridResults[wallIndex]
 
+    const resolved = resolveWallTile(wall, tile)
     const tileGrid = gridResult ? {
       columns:   gridResult.columns,
       rows:      gridResult.rows,
-      tileW_mm:  parseFloat(tile.tile_width)  || 0,
-      tileH_mm:  parseFloat(tile.tile_height) || 0,
-      groutW_mm: parseFloat(tile.grout_width) || 0,
-      groutColor: tile.grout_color,
+      tileW_mm:  resolved.tileW / 10,
+      tileH_mm:  resolved.tileH / 10,
+      groutW_mm: resolved.groutW / 10,
+      groutColor: resolved.groutColor,
       masks: wall.masks,
     } : { columns: 0, rows: 0, tileW_mm: 0, tileH_mm: 0, groutW_mm: 0, groutColor: '#ccc', masks: [] }
 
