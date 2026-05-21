@@ -90,10 +90,10 @@ export default function LayoutTab() {
     [walls, tileColors]
   )
 
-  // Перестройка последовательности при изменении данных проекта
+  // Перестройка последовательности при изменении данных проекта или режима
   useEffect(() => {
     rebuildSequence(walls, tile, tileColors, palette)
-  }, [walls, tile, tileColors, rebuildSequence, palette])
+  }, [walls, tile, tileColors, rebuildSequence, palette, mode])
 
   // Wake Lock пока вкладка открыта
   useWakeLock(true)

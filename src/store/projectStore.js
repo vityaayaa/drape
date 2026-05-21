@@ -162,11 +162,15 @@ export const useProjectStore = create((set, get) => ({
     return { tile, walls, corners, pixelizer }
   },
 
-  restoreSnapshot: (snapshot) =>
+  restoreSnapshot: (snapshot) => {
+    if (!snapshot || typeof snapshot !== 'object') return
+    if (!Array.isArray(snapshot.walls)) return
+    if (!snapshot.tile || typeof snapshot.tile !== 'object') return
     set({
-      tile:      snapshot.tile      ?? { ...DEFAULT_TILE },
-      walls:     snapshot.walls     ?? [],
+      tile:      snapshot.tile,
+      walls:     snapshot.walls,
       corners:   snapshot.corners   ?? {},
       pixelizer: snapshot.pixelizer ?? { ...DEFAULT_PIXELIZER },
-    }),
+    })
+  },
 }))
