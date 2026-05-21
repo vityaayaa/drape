@@ -976,3 +976,275 @@ SchemaLegend готова. ExportDialog подключён через dialogOpen
 - `src/components/export/ExportTab.jsx` — split-screen с drag-handle
 
 Следующий этап — вкладка «Укладка».
+
+---
+
+## Сессия 4.1 — Укладка UI: экран ✅
+
+### Компоновка экрана
+
+Вариант C — «Вертикальный стек с цветовым акцентом». Без скролла на iPhone 14 (787px рабочей зоны):
+
+```
+┌──────────────────────────┐  ← safe area top
+│ [По рядам▾]    247/1820  │  ← 44px toolbar: переключатель режима + счётчик
+├──────────────────────────┤
+│ ┌──────────────────────┐ │
+│ │ [██] Цвет №7         │ │  ← цвет 72×72px слева, метаданные справа
+│ │      #a78bfa         │ │  ← вся карточка ≈104px
+│ │ Стена 2              │ │
+│ │ Ряд 3 · Плитка 7     │ │
+│ └──────────────────────┘ │
+├──────────────────────────┤
+│                          │
+│  [====== превью ======]  │  ← canvas 260px, overflow-x scroll
+│                          │
+├──────────────────────────┤
+│  [◀  Предыдущая] [Следующая  ▶]  │  ← 68px, gap 8px
+│  [        К плитке...        ]   │  ← 48px ghost
+└──────────────────────────┘  ← tabbar 57px
+
+Итого высот: 44 + 16 + 104 + 16 + 260 + 16 + 68 + 8 + 48 + 16 = 596px < 787px ✅
+```
+
+### Блок текущей плитки
+
+- **Цветной квадрат:** 72×72px, `borderRadius: 12px`, float left
+- **Строка 1:** «Цвет №7» — 18px/600, `#f1f5f9`
+- **Строка 2:** `#a78bfa` — 13px monospace, `#94a3b8`
+- **Строка 3:** «Стена 2» — 15px/500, `#f1f5f9`
+- **Строка 4:** «Ряд 3 от пола · Плитка 7 слева» — 13px, `#94a3b8`
+- **Карточка:** `background: #0e1018`, `borderRadius: 16px`, `padding: 16px`, border `rgba(255,255,255,0.07)`, `box-shadow: inset 0 1px 0 rgba(255,255,255,0.06)`
+- **Hex показывать:** да — мастер сверяется с каталогом
+- **Размер плитки:** не показывать — лишний шум
+- **Счётчик прогресса:** в toolbar справа, 13px/500 `#64748b`
+- **Предупреждение «нет пикселизации»:** желтый баннер 36px над карточкой при отсутствии tileColors
+
+### Мини-превью стены
+
+- **Размер:** высота 260px, ширина 100%, overflow-x auto (скролл для широких стен)
+- **Масштаб:** самая высокая стена = 240px (padding 10px сверху/снизу)
+- **Текущая плитка:** 3px обводка `#a78bfa` (фиолетовый, не цвет плитки)
+- **Соседние 4 плитки** (L/R/U/D): overlay `rgba(167,139,250,0.18)` поверх цвета
+- **Уложенные плитки:** overlay `rgba(0,0,0,0.45)` + «✓» 8px белый при клетке ≥18px
+- **Маски:** штриховка как в schemaRenderer
+- **Тап на плитку:** переход к ней, opacity 0.75 на 80ms как affordance
+- **Авто-центрирование:** `scrollTo({ behavior: 'smooth' })` при смене currentTile
+- **НЕ использовать react-zoom-pan-pinch** — зум избыточен, только горизонтальный scroll
+
+### Навигация
+
+- **«Предыдущая» / «Следующая»:** 50%/50% ширины, высота 68px, `borderRadius: 14px`, gap 8px
+  - Пред: secondary (`rgba(255,255,255,0.06)`, `ChevronLeft` слева)
+  - След: primary (градиент `#7c3aed → #6d28d9`, `ChevronRight` справа)
+- **Swipe влево/вправо:** threshold 50px, `onTouchStart`/`onTouchEnd`
+- **«К плитке…»:** ghost кнопка h:48, иконка `Hash`, открывает bottom sheet с numeric input
+
+### Переключатель режима
+
+- В toolbar слева: pill-сегмент h:32, `borderRadius: 20px`
+- Активная: `rgba(124,58,237,0.35)`, `color: #a78bfa`/600
+- Неактивная: `#64748b`
+- При переключении: rebuildSequence + goTo(0)
+
+### Смена стены
+
+- Toast над навигацией «Переходим на Стена N+1», 2.5 сек
+- `background: rgba(124,58,237,0.15)`, `border: 1px solid rgba(124,58,237,0.3)`, `color: #a78bfa`
+- Slide-up 150ms / fade-out 200ms
+
+### Завершение
+
+- `LayoutDoneScreen`: иконка `CheckCircle` 64px `#22c55e`, заголовок, статистика, кнопка «Начать сначала» + «→ В схему»
+- Без конфетти — отвлекает
+- Анимация иконки: scale 0→1 300ms
+
+### Пустые состояния
+
+- **Нет стен:** EmptyState с `Grid3x3`, кнопка «→ Перейти в Комнату»
+- **Нет пикселизации:** желтый баннер-предупреждение, укладка НЕ блокируется, цвет плитки = grout_color / #888888
+
+### Контекст для следующей сессии 4.2
+
+Компоновка: toolbar 44px (режим + счётчик) + карточка 104px + превью 260px + навигация 68+8+48px. Dark Glow токены. Canvas превью: высота 260px, overflow-x scroll, масштаб по высоте стены, обводка текущей `#a78bfa` 3px, соседние overlay `rgba(167,139,250,0.18)`. Нужно решить: хранение прогресса, уложенные плитки, детали режима «по цветам», анимации переходов, Wake Lock, toolbar/header.
+
+---
+
+## Сессия 4.2 — Укладка UI: детали ✅
+
+### Хранение прогресса
+
+- **layoutStore** — отдельный Zustand store с `persist` middleware в localStorage
+- Ключ: `drape-layout-store`
+- Сохраняет: `currentIndex`, `mode`, `completedTiles` (как массив, десериализуется в Set)
+- При открытии: восстанавливается последний currentIndex. Если вышел за bounds sequence — сброс на 0
+- НЕ в IndexedDB/projectStore — прогресс эфемерный, не часть проекта
+- **«Начать сначала»:** только на экране завершения. На основном экране нет
+
+### Отметка уложенных плиток
+
+- **Реализовать** — но НЕ обязательный шаг (автоотметка при навигации не происходит)
+- **Кнопка «✓ Отметить»:** ghost, h:36, padding `8px 12px` (итого ≥44px touch area), в карточке справа внизу
+- При нажатии: добавить в completedTiles, кнопка → «✓ Уложена» зелёным. Повторный тап — снять
+- **Хранение:** `Set<'wallId:col:row'>` в layoutStore, persist localStorage
+- **Визуально:** затемнение + «✓» на превью (как в 4.1)
+- **Navigate на уложенную:** отметка сохраняется, текущая плитка может быть уложенной
+
+### Режим «по цветам» — детали
+
+- **Toolbar при byColor:** добавляется цветной чип между переключателем и счётчиком
+  - Квадратик 20×20px текущего цвета + «Цвет №3 (48 осталось)» — 12px, `#64748b`
+- **Переключатель режима:** кнопка-дропдаун `[▾ По рядам]` h:32, открывает inline-sheet выбора
+- **Toast при смене цвета:** «Переходим к Цвету №N» (аналогичен toast смены стены)
+
+### Широкие стены — превью
+
+- **Авто-центрирование:** `containerRef.scrollTo({ left: tileX - containerWidth/2 + tileWidth/2, behavior: 'smooth' })`
+- **Индикатор скролла:** fade-градиент `rgba(8,8,15,0.5)` по краям, 16px, CSS `pointer-events: none`
+- **Одна плитка:** работает штатно
+
+### Touch targets и доступность
+
+- Кнопки Пред/След: 68px — OK
+- «К плитке»: 48px — OK
+- «Отметить»: h:36 + padding 8px → ≥44px — OK
+- **Swipe:** `onTouchStart/End` на всём экране. Threshold X: 50px. Допустимый уход Y: ±30px. `e.preventDefault()` при детектировании
+- **Wake Lock:** `navigator.wakeLock.request('screen')` при `activeTab === 'layout'`, освобождать при уходе/visibilitychange. `try/catch` — Safari не поддерживает, тихий фейл
+
+### Анимации переходов
+
+- **Смена плитки (карточка):** fade-crossfade 80ms (40ms out + 40ms in). CSS transition `opacity 40ms ease-in/ease-out`
+- **Превью:** без анимации — scrollTo плавный и так
+- **Завершение:** иконка scale 0→1, 300ms, `cubic-bezier(0.34, 1.56, 1, 1)` (spring без библиотеки)
+- **Toast:** `translateY(8px)→0` + `opacity 0→1`, 150ms ease-out
+- **Flash при смене стены/цвета:** белый overlay 15% opacity на превью, 100ms fade-out
+
+### Toolbar / выход
+
+```
+│ [▾ По рядам]  [████ №3 (48)]   247/1820 │  44px
+```
+- Нет кнопки «назад» — пользователь уходит через таббар (Укладка — полноценная вкладка)
+- Нет заголовка «Укладка» — таббар уже показывает активную иконку
+- Переключатель режима — всегда видим как `[▾ По рядам]`, тап → inline выбор (не bottom sheet)
+- Чип цвета при byColor — появляется по центру, исчезает при byRow
+
+### Контекст для следующей сессии 4.3
+
+Все дизайн-решения зафиксированы. Сессия 4.3 — TDD реализация (ВЫПОЛНЕНА, см. ниже):
+
+---
+
+## Сессия 4.3 — Укладка: ядро логики ✅
+
+### layoutSequencer.js
+
+`src/utils/layoutSequencer.js` — 4 чистые функции:
+- `buildTileSequence(walls, globalTile, tileColors, palette, mode)` — строит упорядоченный массив всех плиток. Фильтрует: mosaic_active=false, нет размеров, isFullyInsideMask. Поле `row` = canvasRow (0=верх), `rowFromFloor` = totalRows-1-canvasRow. byRow: wallIndex → rowFromFloor → col. byColor: colorIndex → wallIndex → rowFromFloor → col.
+- `getTileAt(sequence, index)` — null при выходе за bounds
+- `findTileIndex(sequence, wallId, col, canvasRow)` — поиск по wallId+col+row
+- `sequenceStats(sequence)` → { total, byWall: Map, byColor: Map }
+
+**Важное знание:** `resolveWallTile` умножает tile_width/height на 10 → единицы 0.1мм. Маски в СМ (×10 внутри isFullyInsideMask). wallW/H = parseFloat(wall.length/height) × 10.
+
+### layoutStore.js
+
+`src/store/layoutStore.js` — Zustand + persist localStorage ('drape-layout-store'):
+- Поля: `currentIndex`, `mode`, `completedTiles[]` (массив, Set в памяти), `sequence[]` (не сохраняется)
+- Actions: `setMode`, `goTo`, `goNext`, `goPrev`, `markCompleted` (toggle), `isCompleted`, `resetProgress`, `rebuildSequence`, `currentTile()`, `findAndGoTo`, `stats()`, `completedSet()`
+- При rebuildSequence: если currentIndex вышел за bounds → сброс на 0
+
+### LayoutWallPreview.jsx
+
+`src/components/layout/LayoutWallPreview.jsx` — canvas 240px высота:
+- Пропорциональный масштаб (по высоте и ширине), центрирование в контейнере
+- Текущая плитка: 3px обводка `#a78bfa` (снаружи тайла)
+- Соседние (L/R/U/D в canvas-координатах): overlay `rgba(167,139,250,0.18)`
+- Уложенные: overlay `rgba(0,0,0,0.45)` + «✓» при тайле ≥14px
+- Маски: штриховка (паттерн из schemaRenderer)
+- Авто-центрирование при смене currentTile через `scrollTo`
+- Hit-test через `canvas._drawMeta` → `onTileClick(col, canvasRow)`
+
+### Тесты
+
+25 новых тестов в `src/utils/layoutSequencer.test.js`. Всего: **86 тестов, все зелёные**.
+
+### Что НЕ удалось
+
+Всё запланированное выполнено.
+
+### Контекст для следующей сессии 4.4
+
+Файлы готовы: layoutSequencer.js, layoutStore.js, LayoutWallPreview.jsx.
+Сессия 4.4 — UI компоненты и полная интеграция:
+- LayoutTileCard.jsx — блок текущей плитки (72×72 цвет, метаданные, анимация fade 80ms)
+- LayoutNav.jsx — кнопки Пред/След (68px), swipe, «К плитке» (bottom sheet)
+- LayoutModeSwitch.jsx — дропдаун режима в toolbar
+- LayoutDoneScreen.jsx — экран завершения
+- LayoutTab.jsx — полная замена заглушки (useEffect rebuildSequence, Wake Lock, toast смены стены)
+- `src/utils/layoutSequencer.js` — buildTileSequence, getTileAt, findTileIndex, sequenceStats
+- `src/store/layoutStore.js` — Zustand + persist localStorage
+- `src/components/layout/LayoutWallPreview.jsx` — canvas превью с подсветкой
+- Тесты через Vitest
+
+---
+
+## Сессия 4.4 — UI компоненты и полная интеграция вкладки «Укладка»
+
+**Дата:** 2026-05-21
+**Статус:** завершена ✅
+
+### Что сделано
+
+#### LayoutTileCard.jsx
+- Карточка текущей плитки: 72×72 цветной квадрат с `outlineOffset:2` для зелёной обводки при isCompleted
+- Мета: «Цвет №N», hex (monospace), название стены, «Ряд X от пола · Плитка Y»
+- Fade анимация 40ms при смене `currentIndex` (`setVisible(false)` → `setTimeout(40)` → `setVisible(true)`)
+- Жёлтый баннер `noPalette` — предупреждение когда нет пикселизации
+- Кнопка «Отметить» / «✓ Уложена» (h:36, padding → ≥44px touch area)
+
+#### LayoutNav.jsx
+- Кнопки «Предыдущая» (secondary `rgba(255,255,255,0.06)`) и «Следующая» (gradient violet) — h:68
+- Swipe-жест на всём root-div: dx≥50px, |dy|≤30px → onPrev/onNext
+- Кнопка «К плитке…» h:48 → bottom sheet с `inputMode="numeric"`, `autoFocus`, Enter → handleGoTo
+- Передаёт `onGoTo(index)` — 0-based индекс
+
+#### LayoutModeSwitch.jsx
+- Pill-сегмент h:32, двойная таблетка в контейнере `rgba(255,255,255,0.05)` с `borderRadius:20`
+- Активная: `rgba(124,58,237,0.35)` bg, `color:#a78bfa` | Неактивная: transparent, `#64748b`
+- Transition 150ms на color/background
+
+#### LayoutDoneScreen.jsx
+- `CheckCircle` 64px `#22c55e` из lucide-react, `strokeWidth:1.5`
+- Анимация монтирования: `requestAnimationFrame` → `scale(0.92)→(1)` + `opacity 0→1`, 240ms ease-out
+- Карточка статистики: «Отмечено / Всего», прогресс-бар `linear-gradient(90deg, #7c3aed, #22c55e)`, %
+- Кнопки: «Начать сначала» (secondary) + «В схему →» (primary gradient, опциональна)
+
+#### LayoutTab.jsx — полная интеграция
+- `useWakeLock(true)`: `navigator.wakeLock.request('screen')` в try/catch, автовосстановление при `visibilitychange`
+- `useEffect` → `rebuildSequence(walls, tile, tileColors, null)` при изменении данных проекта
+- Тулбар: `LayoutModeSwitch` слева + счётчик «N / Total» справа (tabular-nums)
+- Превью стены: `LayoutWallPreview` + плашка с названием стены (абсолютная, top-left)
+- `LayoutTileCard` в `padding:0 16px`
+- `LayoutNav` с привязкой goTo (0-based)
+- Пустое состояние: нет `mosaic_active && wall_active` стен → EmptyState с Layers icon
+- Экран Done: `currentIndex >= totalCount && totalCount > 0` → `LayoutDoneScreen` со stats
+- `noPalette`: `Object.keys(tileColors).length === 0` при непустой последовательности
+- Клик по плитке на превью → `findAndGoTo(wallId, col, canvasRow)`
+- «В схему» → `setActiveTab('schema')`
+
+### Итог сессии
+
+Все 5 компонентов реализованы. Сборка `vite build` — чистая ✅. 25 тестов layoutSequencer — зелёные ✅.
+
+**Вкладка «Укладка» полностью готова к тестированию на устройстве.**
+
+### Файлы сессии 4.4
+
+- `src/components/layout/LayoutTileCard.jsx` — карточка плитки
+- `src/components/layout/LayoutNav.jsx` — навигация + swipe + bottom sheet
+- `src/components/layout/LayoutModeSwitch.jsx` — переключатель режима
+- `src/components/layout/LayoutDoneScreen.jsx` — экран завершения
+- `src/components/layout/LayoutTab.jsx` — полная интеграция (заменила заглушку)
+
+Ключевые данные: tileColors ключ `'col_row'` (col=X, row=canvasRow, от верха). rowFromFloor = totalRows-1-canvasRow. Floor anchor: startY = H - rows*stepY. isFullyInsideMask принимает tileStartY_mm. resolveWallTile из schemaRenderer. mosaic_active=true — фильтр для стен.
