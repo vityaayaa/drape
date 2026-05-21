@@ -62,7 +62,10 @@ export function drawWallPhoto(
   if (gridVisible && columns > 0 && rows > 0) {
     const tileWpx = Math.round(tileW_mm * canvasScale)
     const tileHpx = Math.round(tileH_mm * canvasScale)
-    const groutPx = Math.max(1, Math.round(groutW_mm * canvasScale))
+    // Шов: 0 если задано 0, иначе минимум 1px для видимости при крошечном масштабе
+    const groutPx = groutW_mm > 0
+      ? Math.max(1, Math.round(groutW_mm * canvasScale))
+      : 0
     const stepX = tileWpx + groutPx
     const stepY = tileHpx + groutPx
     const startY = floorAnchorStartY(H, rows, tileH_mm, groutW_mm, canvasScale)

@@ -18,14 +18,50 @@ export default function RoomScene({ positions, cx, cz, maxHeight }) {
     return g
   }, [])
 
+  // Для каждой стены вычисляем направление "внутрь комнаты" и определяем,
+  // которая грань (+Z или -Z) интерьерная.
+  const wallsWithSides = useMemo(() => {
+    return positions.map((pos) => {
+      // Локальное +Z после поворота вокруг Y: (sin θ, 0, cos θ)
+      const frontZ = [Math.sin(pos.rotationY), 0, Math.cos(pos.rotationY)]
+      // Направление к центру комнаты
+      const inward = [cx - pos.position[0], 0, cz - pos.position[2]]
+      const dot = frontZ[0] * inward[0] + frontZ[2] * inward[2]
+      // Если +Z грань смотрит к центру комнаты — это интерьерная сторона.
+      const interiorSide = dot >= 0 ? 'positive' : 'negative'
+      return { ...pos, interiorSide }
+    })
+  }, [positions, cx, cz])
+
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <pointLight position={[cx, maxHeight * 0.95, cz]} intensity={1.2} color="#fffaf0" />
-      <hemisphereLight args={['#e0e7ff', '#1e1b2e', 0.4]} />
+      {/* Основное амбиентное освещение */}
+      <ambientLight intensity={0.7} />
+      {/* Hemisphere — нежный наполнитель для имитации неба/пола */}
+      <hemisphereLight args={['#e0e7ff', '#1e1b2e', 0.6]} />
+      {/* Тёплая лампа сверху по центру комнаты */}
+      <pointLight
+        position={[cx, maxHeight * 1.2, cz]}
+        intensity={1.4}
+        distance={maxHeight * 8}
+        decay={1.5}
+        color="#fffaf0"
+      />
+      {/* Холодный directional для контраста */}
+      <directionalLight
+        position={[cx + maxHeight * 2, maxHeight * 3, cz + maxHeight * 2]}
+        intensity={0.5}
+        color="#ffffff"
+      />
+      <directionalLight
+        position={[cx - maxHeight * 2, maxHeight * 1.5, cz - maxHeight * 2]}
+        intensity={0.3}
+        color="#c7d2fe"
+      />
+
       <primitive object={gridLarge} />
       <primitive object={gridSmall} />
-      {positions.map((pos) => {
+      {wallsWithSides.map((pos) => {
         const wall = walls.find((w) => w.id === pos.wallId)
         if (!wall) return null
         return (
@@ -36,6 +72,7 @@ export default function RoomScene({ positions, cx, cz, maxHeight }) {
             tileColors={tileColors[wall.id]}
             position={pos.position}
             rotationY={pos.rotationY}
+            interiorSide={pos.interiorSide}
           />
         )
       })}

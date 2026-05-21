@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react'
-import { Box } from 'lucide-react'
-import EmptyState from '../shared/EmptyState.jsx'
+import { LayoutGrid } from 'lucide-react'
+import EmptyState from '../ui/EmptyState.jsx'
 import { useProjectStore } from '../../store/projectStore.js'
 import { Canvas } from '@react-three/fiber'
 import { computeWallPositions } from '../../utils/computeWallPositions.js'
@@ -28,15 +28,13 @@ export default function ViewerTab() {
 
   if (activeWalls.length === 0) {
     return (
-      <div style={{ position: 'relative', width: '100%', height: '100%', background: '#08080f' }}>
-        <EmptyState
-          icon={<Box size={32} color="#818cf8" style={{ opacity: 0.5 }} />}
-          title="Нет стен для 3D-просмотра"
-          subtitle="Заполните длину и высоту хотя бы одной стены"
-          actionLabel="→ Перейти в Комнату"
-          onAction={() => setActiveTab('room')}
-        />
-      </div>
+      <EmptyState
+        icon={LayoutGrid}
+        title="Нет стен для 3D-просмотра"
+        description="Добавьте стены в разделе «Комната», заполните длину и высоту."
+        actionLabel="Перейти в Комнату"
+        onAction={() => setActiveTab('room')}
+      />
     )
   }
 
@@ -47,8 +45,12 @@ export default function ViewerTab() {
 
   const cx = center[0]
   const cz = center[2]
-  const initialPosition = [cx + camDist * 0.7, maxHeight / 2 + camDist * 0.5, cz + camDist * 0.7]
-  const initialTarget = [cx, maxHeight / 2, cz]
+  // Изометрия (cabinet ≈ 45° горизонтально, ≈30° вертикально):
+  // x = z = cos(45°)·d, y = sin(30°)·d. Используем чуть более «строгие» углы.
+  const isoH = Math.SQRT1_2 * camDist            // ≈0.707
+  const isoY = 0.5 * camDist + maxHeight / 2     // ≈30° вверх
+  const initialPosition = [cx + isoH, isoY, cz + isoH]
+  const initialTarget   = [cx, maxHeight / 2, cz]
 
   function handleReset() {
     cameraRef.current?.reset()
@@ -106,7 +108,7 @@ const s = {
   },
   canvasWrapper: {
     position: 'absolute',
-    top: 48, // must match ViewerToolbar height
+    top: 52, // must match ViewerToolbar height
     bottom: 0, left: 0, right: 0,
   },
 }

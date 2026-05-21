@@ -30,7 +30,10 @@ export function computeTextureLayout(wall, tileParams) {
 
   const maxDim = Math.max(cols, rows)
   const cellPx = Math.max(4, Math.min(32, Math.floor(1024 / maxDim)))
-  const groutPx = Math.max(1, Math.round((groutW / (tileW + groutW)) * cellPx))
+  // Если шов не задан — 0 пикселей. Иначе пропорционально, минимум 1px.
+  const groutPx = groutW > 0
+    ? Math.max(1, Math.round((groutW / (tileW + groutW)) * cellPx))
+    : 0
 
   return {
     cols,
