@@ -7,8 +7,7 @@ import TileForm from './TileForm.jsx'
 import WallCard from './WallCard.jsx'
 import CornersSection from './CornersSection.jsx'
 import SummarySection from './SummarySection.jsx'
-
-const FLOW_STEPS = ['Комната', 'Фото', '3D', 'Схема', 'Укладка']
+import FlowStepper from './FlowStepper.jsx'
 
 export default function RoomTab() {
   const { tile, walls, corners } = useProjectStore()
@@ -20,20 +19,11 @@ export default function RoomTab() {
 
   return (
     <div style={s.page}>
-      {walls.length === 0 && (
-        <div style={s.flowStrip}>
-          {FLOW_STEPS.map((step, i) => (
-            <span key={step}>
-              <span style={i === 0 ? s.flowActive : s.flowDim}>{step}</span>
-              {i < FLOW_STEPS.length - 1 && <span style={s.flowArrow}> → </span>}
-            </span>
-          ))}
-        </div>
-      )}
+      <FlowStepper current="room" />
       <TileForm />
       {walls.length === 0 && (
         <div style={s.emptyHint}>
-          <LayoutGrid size={28} color="#818cf8" style={{ opacity: 0.3 }} />
+          <LayoutGrid size={28} color="#a78bfa" style={{ opacity: 0.5 }} />
           <p style={s.emptyTitle}>Стен пока нет</p>
           <p style={s.emptySubtitle}>Нажмите «Добавить стену» ниже</p>
         </div>
@@ -49,22 +39,13 @@ export default function RoomTab() {
 }
 
 const s = {
-  page:          { overflowY: 'auto', height: '100%', background: '#08080f', color: '#f1f5f9' },
-  flowStrip: {
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    flexWrap: 'wrap', gap: 0,
-    padding: '10px 16px 6px',
-    fontSize: 10,
-  },
-  flowActive:  { color: '#a78bfa', fontWeight: 600 },
-  flowDim:     { color: '#334155' },
-  flowArrow:   { color: '#334155' },
+  page: { overflowY: 'auto', height: '100%', background: 'var(--bg)', color: 'var(--text-primary)' },
   emptyHint: {
     display: 'flex', flexDirection: 'column',
     alignItems: 'center', gap: 6,
     padding: '28px 20px 8px',
     textAlign: 'center',
   },
-  emptyTitle:    { fontSize: 15, color: '#94a3b8', margin: 0 },
-  emptySubtitle: { fontSize: 13, color: '#64748b', margin: 0 },
+  emptyTitle:    { fontSize: 15, color: 'var(--text-secondary)', margin: 0 },
+  emptySubtitle: { fontSize: 13, color: 'var(--text-hint)', margin: 0 },
 }
