@@ -4,7 +4,7 @@ import { useProjectStore } from '../../store/projectStore.js'
 import { loadPhoto, savePhoto, deletePhoto } from '../../store/persistence.js'
 import { computeScale, wallCanvasDimensions } from '../../utils/pixelizerGeometry.js'
 import { calculateGrid } from '../../utils/roomGeometry.js'
-import { sampleWallColors } from '../../utils/pixelizerSampler.js'
+import { sampleWallColorsWorker } from '../../utils/pixelizerSampler.js'
 import { resolveWallTile } from '../../utils/schemaRenderer.js'
 import PhotoPanorama from './PhotoPanorama.jsx'
 import ControlsPane from './ControlsPane.jsx'
@@ -48,8 +48,12 @@ export default function PixelizerTab() {
   useEffect(() => {
     const el = panoramaRef.current
     if (!el) return
-    const h = el.clientHeight
-    if (h > 0) setPanoramaH(h)
+    const ro = new ResizeObserver(entries => {
+      const h = entries[0].contentRect.height
+      if (h > 0) setPanoramaH(h)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
   }, [])
 
   // ── canvasScale ──
@@ -300,7 +304,7 @@ export default function PixelizerTab() {
         const groupTotalWidth_mm = photoGroup
           .reduce((sum, w) => sum + (parseFloat(w.length) || 0) * 10, 0)
 
-        const colors = await sampleWallColors(blob, ps, tileGrid, dims.width, dims.height, canvasScale, wallGroupOffsetX_mm, groupTotalWidth_mm)
+        const colors = await sampleWallColorsWorker(blob, ps, tileGrid, dims.width, dims.height, canvasScale, wallGroupOffsetX_mm, groupTotalWidth_mm)
         setTileColors(wall.id, colors)
       }
 

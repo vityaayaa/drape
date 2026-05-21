@@ -1,6 +1,36 @@
 // src/utils/pixelizerSampler.js
 import { tileRect, isFullyInsideMask } from './pixelizerGeometry.js'
 
+export async function sampleWallColorsWorker(
+  photoBlob, photoSettings, tileGrid,
+  canvasW, canvasH, canvasScale,
+  wallGroupOffsetX_mm = 0, groupTotalWidth_mm = null
+) {
+  if (typeof OffscreenCanvas === 'undefined') {
+    return sampleWallColors(photoBlob, photoSettings, tileGrid, canvasW, canvasH, canvasScale, wallGroupOffsetX_mm, groupTotalWidth_mm)
+  }
+
+  const buffer = await photoBlob.arrayBuffer()
+  const mimeType = photoBlob.type
+
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL('../workers/pixelize.worker.js', import.meta.url), { type: 'module' })
+    worker.onmessage = (e) => {
+      worker.terminate()
+      if (e.data.error) reject(new Error(e.data.error))
+      else resolve(e.data.colors)
+    }
+    worker.onerror = (e) => {
+      worker.terminate()
+      reject(new Error(e.message))
+    }
+    worker.postMessage(
+      { buffer, mimeType, photoSettings, tileGrid, canvasW, canvasH, canvasScale, wallGroupOffsetX_mm, groupTotalWidth_mm },
+      [buffer]
+    )
+  })
+}
+
 export function averageColor(pixels, x, y, w, h, imageWidth) {
   const x1 = Math.max(0, Math.round(x))
   const y1 = Math.max(0, Math.round(y))
