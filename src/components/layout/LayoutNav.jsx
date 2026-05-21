@@ -3,7 +3,7 @@
 // Навигация режима укладки: кнопки Пред/След, swipe-жест, «К плитке…» (bottom sheet).
 
 import { useState, useCallback, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Hash } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
 
 export default function LayoutNav({
   currentIndex,
@@ -87,7 +87,7 @@ export default function LayoutNav({
           onClick={() => setSheetOpen(true)}
           aria-label="Перейти к плитке по номеру"
         >
-          <Hash size={16} color="#64748b" />
+          <Search size={16} color="var(--text-secondary)" />
           <span style={s.goToLabel}>К плитке…</span>
         </button>
       </div>
