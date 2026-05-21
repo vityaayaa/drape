@@ -2,8 +2,7 @@
 import { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import { useProjectStore } from '../../store/projectStore.js'
 import { loadPhoto, savePhoto, deletePhoto } from '../../store/persistence.js'
-import { computeScale } from '../../utils/pixelizerGeometry.js'
-import { wallCanvasDimensions } from '../../utils/pixelizerGeometry.js'
+import { computeScale, wallCanvasDimensions } from '../../utils/pixelizerGeometry.js'
 import { calculateGrid } from '../../utils/roomGeometry.js'
 import { sampleWallColors } from '../../utils/pixelizerSampler.js'
 import { resolveWallTile } from '../../utils/schemaRenderer.js'
@@ -43,6 +42,7 @@ export default function PixelizerTab() {
 
   // ── Высота панорамы ──
   const panoramaRef = useRef(null)
+  const toastTimerRef = useRef(null)
   const [panoramaH, setPanoramaH] = useState(window.innerHeight * 0.40)
 
   useEffect(() => {
@@ -135,12 +135,17 @@ export default function PixelizerTab() {
   useEffect(() => {
     const needGrid = eyeMode === 'photo+grid' || eyeMode === 'grid'
     if (needGrid !== pixelizer.gridVisible) setGridVisible(needGrid)
-  }, [eyeMode])
+  }, [eyeMode, pixelizer.gridVisible, setGridVisible])
 
   // ── Toast ──
   const showToast = useCallback((msg) => {
+    clearTimeout(toastTimerRef.current)
     setToastMsg(msg)
-    setTimeout(() => setToastMsg(null), 3200)
+    toastTimerRef.current = setTimeout(() => setToastMsg(null), 2500)
+  }, [])
+
+  useEffect(() => {
+    return () => clearTimeout(toastTimerRef.current)
   }, [])
 
   // ── Eye cycling ──

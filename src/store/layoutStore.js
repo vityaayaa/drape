@@ -59,7 +59,7 @@ export const useLayoutStore = create(
 
       isCompleted: (tile) => {
         const key = `${tile.wallId}:${tile.col}:${tile.row}`
-        return get().completedTiles.includes(key)
+        return get().completedSet().has(key)
       },
 
       resetProgress: () => {

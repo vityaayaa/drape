@@ -2,6 +2,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { useProjectStore } from '../../store/projectStore.js'
 
+const SHOW_ON_TABS = ['room', 'pixelizer', 'viewer']
+
 export default function SavedToast() {
   const activeTab = useProjectStore((s) => s.activeTab)
   const [visible, setVisible] = useState(false)
@@ -9,12 +11,10 @@ export default function SavedToast() {
   const hideTimer = useRef(null)
   const debounceTimer = useRef(null)
 
-  const showOnTabs = ['room', 'pixelizer', 'viewer']
-
   useEffect(() => {
     const unsub = useProjectStore.subscribe((state, prev) => {
       if (state.activeTab !== prev.activeTab) return
-      if (!showOnTabs.includes(state.activeTab)) return
+      if (!SHOW_ON_TABS.includes(state.activeTab)) return
 
       clearTimeout(debounceTimer.current)
       debounceTimer.current = setTimeout(() => {
@@ -34,7 +34,7 @@ export default function SavedToast() {
     }
   }, [])
 
-  if (!visible || !showOnTabs.includes(activeTab)) return null
+  if (!visible || !SHOW_ON_TABS.includes(activeTab)) return null
 
   return (
     <div

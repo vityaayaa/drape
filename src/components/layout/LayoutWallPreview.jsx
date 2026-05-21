@@ -51,6 +51,7 @@ export default function LayoutWallPreview({
   const canvasRef      = useRef(null)
   const containerRef   = useRef(null)
   const gridRef        = useRef(null)
+  const drawMetaRef    = useRef(null)
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current
@@ -193,7 +194,7 @@ export default function LayoutWallPreview({
     }
 
     // Сохраняем метаданные для hit-test
-    canvas._drawMeta = { offsetX, startY, stepX, stepY, tileWpx, tileHpx, cols, rows }
+    drawMetaRef.current = { offsetX, startY, stepX, stepY, tileWpx, tileHpx, cols, rows }
   }, [wall, globalTile, tileColors, currentTile, completedSet])
 
   // Перерисовка при изменении данных
@@ -208,7 +209,7 @@ export default function LayoutWallPreview({
     if (!container || !canvas || !currentTile) return
     if (currentTile.wallId !== wall?.id) return
 
-    const meta = canvas._drawMeta
+    const meta = drawMetaRef.current
     if (!meta) return
 
     const tileCenterX = meta.offsetX + currentTile.col * meta.stepX + meta.tileWpx / 2
@@ -220,7 +221,7 @@ export default function LayoutWallPreview({
   const handleClick = useCallback((e) => {
     const canvas = canvasRef.current
     if (!canvas || !onTileClick) return
-    const meta = canvas._drawMeta
+    const meta = drawMetaRef.current
     if (!meta) return
 
     const rect = canvas.getBoundingClientRect()
