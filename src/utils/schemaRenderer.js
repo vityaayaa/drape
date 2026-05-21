@@ -46,11 +46,11 @@ export function contrastColor(hex) {
 // Число колонок/рядов для стены
 function wallGrid(wall, tile) {
   const { tileW, tileH, groutW } = resolveWallTile(wall, tile)
-  const wallW_mm = parseFloat(wall.length)  * 10
-  const wallH_mm = parseFloat(wall.height)  * 10
+  const wallW_mm = parseFloat(wall.length)  * 100
+  const wallH_mm = parseFloat(wall.height)  * 100
   if ([tileW, tileH, wallW_mm, wallH_mm].some((v) => isNaN(v) || v <= 0)) return null
-  const columns = Math.ceil(wallW_mm / (tileW + groutW))
-  const rows    = Math.ceil(wallH_mm / (tileH + groutW))
+  const columns = Math.ceil((wallW_mm + groutW) / (tileW + groutW))
+  const rows    = Math.ceil((wallH_mm + groutW) / (tileH + groutW))
   return { columns, rows, tileW, tileH, groutW, wallW_mm, wallH_mm }
 }
 

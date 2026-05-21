@@ -27,16 +27,16 @@ function escapeXml(str) {
 // Вычисляет колонки/ряды и геометрию плиток для одной стены
 function wallLayout(wall, globalTile, scale) {
   const ov = wall.tile_overrides ?? {}
-  const tileW  = parseFloat(ov.tile_width  ?? globalTile.tile_width)  * 10
-  const tileH  = parseFloat(ov.tile_height ?? globalTile.tile_height) * 10
-  const groutW = parseFloat(ov.grout_width ?? globalTile.grout_width) * 10 || 0
+  const tileW  = parseFloat(ov.tile_width  ?? globalTile.tile_width)
+  const tileH  = parseFloat(ov.tile_height ?? globalTile.tile_height)
+  const groutW = parseFloat(ov.grout_width ?? globalTile.grout_width) || 0
   const wallW  = parseFloat(wall.length)   * 10
   const wallH  = parseFloat(wall.height)   * 10
 
   if ([tileW, tileH, wallW, wallH].some((v) => isNaN(v) || v <= 0)) return null
 
-  const columns = Math.ceil(wallW / (tileW + groutW))
-  const rows    = Math.ceil(wallH / (tileH + groutW))
+  const columns = Math.ceil((wallW + groutW) / (tileW + groutW))
+  const rows    = Math.ceil((wallH + groutW) / (tileH + groutW))
 
   return { tileW, tileH, groutW, wallW, wallH, columns, rows }
 }

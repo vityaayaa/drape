@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildPalette, withSurplus } from './buildPalette.js'
 import { buildSchemaLayout, resolveWallTile, contrastColor } from './schemaRenderer.js'
+import { calculateGrid } from './roomGeometry.js'
 
 // --- buildPalette ---
 
@@ -134,12 +135,12 @@ describe('buildSchemaLayout', () => {
   })
 
   it('scale подбирается так чтобы самая высокая стена занимала targetFill от availableH', () => {
-    // Стена 300см = 3000мм, availableH=600, targetFill=0.8
-    // scale = 600*0.8 / 3000 = 0.16 px/mm
+    // Стена 300см = 30000 (0.1мм), availableH=600, targetFill=0.8
+    // scale = 600*0.8 / 30000 = 0.016 px/0.1мм
     const walls = [makeWall('w1', '200', '300')]
     const tile = makeTile()
     const { scale } = buildSchemaLayout(walls, tile, 600, { targetFill: 0.8 })
-    expect(scale).toBeCloseTo(0.16)
+    expect(scale).toBeCloseTo(0.016)
   })
 
   it('ширина стены пропорциональна реальной ширине', () => {
@@ -155,5 +156,24 @@ describe('buildSchemaLayout', () => {
     const walls = [makeWall('w1', '', '')]
     const { wallLayouts } = buildSchemaLayout(walls, makeTile(), 400)
     expect(wallLayouts[0].placeholder).toBe(true)
+  })
+})
+
+describe('buildSchemaLayout — совпадение с calculateGrid', () => {
+  it('columns совпадают с calculateGrid для стены 300см, плитка 20мм, шов 2мм', () => {
+    const wall = {
+      id: 'w1', name: 'Тест', length: '300', height: '250',
+      wall_active: true, mosaic_active: true,
+      masks: [], tile_overrides: {},
+    }
+    const tile = makeTile('20', '25', '2')
+    const corners = {}
+
+    const [gridResult] = calculateGrid(tile, [wall], corners)
+    const { wallLayouts } = buildSchemaLayout([wall], tile, 600)
+    const schemaGrid = wallLayouts[0].grid
+
+    expect(schemaGrid.columns).toBe(gridResult.columns)
+    expect(schemaGrid.rows).toBe(gridResult.rows)
   })
 })
