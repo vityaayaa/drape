@@ -3,7 +3,7 @@
 // Вкладка «Укладка»: пошаговый помощник для укладчика плитки.
 // Собирает всё вместе: WallPreview, TileCard, Nav, ModeSwitch, DoneScreen.
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useMemo } from 'react'
 import { Layers } from 'lucide-react'
 import { useProjectStore } from '../../store/projectStore.js'
 import { useLayoutStore }  from '../../store/layoutStore.js'
@@ -12,6 +12,7 @@ import LayoutTileCard      from './LayoutTileCard.jsx'
 import LayoutNav           from './LayoutNav.jsx'
 import LayoutModeSwitch    from './LayoutModeSwitch.jsx'
 import LayoutDoneScreen    from './LayoutDoneScreen.jsx'
+import { buildPalette }    from '../../utils/buildPalette.js'
 
 // ── Wake Lock ─────────────────────────────────────────────────────────────────
 
@@ -84,10 +85,15 @@ export default function LayoutTab() {
     stats,
   } = useLayoutStore()
 
+  const palette = useMemo(
+    () => buildPalette(walls, tileColors),
+    [walls, tileColors]
+  )
+
   // Перестройка последовательности при изменении данных проекта
   useEffect(() => {
-    rebuildSequence(walls, tile, tileColors, null)
-  }, [walls, tile, tileColors, rebuildSequence])
+    rebuildSequence(walls, tile, tileColors, palette)
+  }, [walls, tile, tileColors, rebuildSequence, palette])
 
   // Wake Lock пока вкладка открыта
   useWakeLock(true)
