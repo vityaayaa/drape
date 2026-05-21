@@ -1,8 +1,9 @@
+import React, { Suspense } from 'react'
 import { useProjectStore } from './store/projectStore.js'
 import { LayoutGrid, Camera, Box, PenLine, Grid3x3 } from 'lucide-react'
 import RoomTab from './components/room/RoomTab.jsx'
 import PixelizerTab from './components/pixelizer/PixelizerTab.jsx'
-import ViewerTab from './components/viewer/ViewerTab.jsx'
+const ViewerTab = React.lazy(() => import('./components/viewer/ViewerTab.jsx'))
 import ExportTab from './components/export/ExportTab.jsx'
 import LayoutTab from './components/layout/LayoutTab.jsx'
 import SavedToast from './components/shared/SavedToast.jsx'
@@ -28,7 +29,9 @@ export default function App() {
           <PixelizerTab />
         </div>
         <div className="tab-panel" data-visible={activeTab === 'viewer' ? 'true' : 'false'}>
-          <ViewerTab />
+          <Suspense fallback={<div style={{ flex: 1, background: '#08080f' }} />}>
+            <ViewerTab />
+          </Suspense>
         </div>
         <div className="tab-panel" data-visible={activeTab === 'export' ? 'true' : 'false'}>
           <ExportTab />
