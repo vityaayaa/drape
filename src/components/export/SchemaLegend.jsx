@@ -1,13 +1,49 @@
 // src/components/export/SchemaLegend.jsx
-import { useState } from 'react'
-import { Minus, Plus, ChevronDown, ChevronUp, Download } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { Minus, Plus, ChevronDown, ChevronUp, Download, Upload } from 'lucide-react'
 import { withSurplus } from '../../utils/buildPalette.js'
 import ExportDialog from './ExportDialog.jsx'
+import { exportProject, importProject } from '../../utils/projectIO.js'
 
 export default function SchemaLegend({ height, palette, walls, tile }) {
   const [surplus, setSurplus]       = useState(10)
   const [expanded, setExpanded]     = useState({})
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [projectMsg, setProjectMsg] = useState(null)
+  const [exporting, setExporting]   = useState(false)
+  const [importing, setImporting]   = useState(false)
+  const importInputRef              = useRef(null)
+
+  const showMsg = (msg) => {
+    setProjectMsg(msg)
+    setTimeout(() => setProjectMsg(null), 3000)
+  }
+
+  async function handleExport() {
+    setExporting(true)
+    try {
+      await exportProject()
+    } catch (e) {
+      showMsg('Ошибка: ' + e.message)
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function handleImportFile(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setImporting(true)
+    try {
+      await importProject(file)
+      showMsg('Проект загружен')
+    } catch (e) {
+      showMsg('Ошибка: ' + e.message)
+    } finally {
+      setImporting(false)
+    }
+  }
 
   const hasData = palette.length > 0
 
@@ -103,7 +139,7 @@ export default function SchemaLegend({ height, palette, walls, tile }) {
         )}
       </div>
 
-      {/* Кнопка «Скачать SVG» — sticky bottom */}
+      {/* Кнопка «Скачать SVG» и секция «Проект» — sticky bottom */}
       <div style={s.footer}>
         <button
           style={{ ...s.downloadBtn, opacity: hasData ? 1 : 0.38 }}
@@ -113,6 +149,34 @@ export default function SchemaLegend({ height, palette, walls, tile }) {
           <Download size={16} style={{ flexShrink: 0 }} />
           Скачать SVG
         </button>
+
+        <div style={s.projectSection}>
+          <span style={s.projectLabel}>Проект</span>
+          {projectMsg && <span style={s.projectMsg}>{projectMsg}</span>}
+          <button
+            style={{ ...s.projectBtn, ...s.projectBtnSecondary, opacity: exporting ? 0.6 : 1 }}
+            onClick={handleExport}
+            disabled={exporting || importing}
+          >
+            <Upload size={16} style={{ flexShrink: 0 }} />
+            {exporting ? 'Сохранение…' : 'Сохранить проект'}
+          </button>
+          <button
+            style={{ ...s.projectBtn, ...s.projectBtnGhost, opacity: importing ? 0.6 : 1 }}
+            onClick={() => importInputRef.current?.click()}
+            disabled={exporting || importing}
+          >
+            <Download size={16} style={{ flexShrink: 0 }} />
+            {importing ? 'Загрузка…' : 'Загрузить проект'}
+          </button>
+          <input
+            ref={importInputRef}
+            type="file"
+            accept=".json"
+            style={{ display: 'none' }}
+            onChange={handleImportFile}
+          />
+        </div>
       </div>
 
       {dialogOpen && (
@@ -313,5 +377,47 @@ const s = {
     fontWeight: 600,
     cursor: 'pointer',
     boxShadow: '0 0 20px rgba(124,58,237,0.3), inset 0 1px 0 rgba(255,255,255,0.12)',
+  },
+  projectSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTop: '1px solid rgba(255,255,255,0.06)',
+  },
+  projectLabel: {
+    fontSize: 11,
+    fontWeight: 600,
+    color: '#475569',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+  },
+  projectMsg: {
+    fontSize: 12,
+    color: '#94a3b8',
+    textAlign: 'center',
+  },
+  projectBtn: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    width: '100%',
+    height: 48,
+    borderRadius: 12,
+    fontSize: 14,
+    fontWeight: 500,
+    cursor: 'pointer',
+  },
+  projectBtnSecondary: {
+    background: 'rgba(124,58,237,0.15)',
+    border: '1px solid rgba(124,58,237,0.35)',
+    color: '#a78bfa',
+  },
+  projectBtnGhost: {
+    background: 'transparent',
+    border: '1px solid rgba(255,255,255,0.1)',
+    color: '#64748b',
   },
 }
