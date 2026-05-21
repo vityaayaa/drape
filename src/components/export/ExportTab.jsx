@@ -116,8 +116,8 @@ const s = {
     justifyContent: 'center',
     // Расширенная touch-зона через pseudo-element недоступна в инлайн-стилях —
     // используем паддинг и отрицательные margin для увеличения hit area
-    margin: '-10px 0',
-    padding: '10px 0',
+    margin: '-20px 0',
+    padding: '20px 0',
     zIndex: 5,
     borderTop:    '1px solid rgba(255,255,255,0.06)',
     borderBottom: '1px solid rgba(255,255,255,0.06)',

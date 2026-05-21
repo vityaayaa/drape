@@ -1248,3 +1248,319 @@ SchemaLegend готова. ExportDialog подключён через dialogOpen
 - `src/components/layout/LayoutTab.jsx` — полная интеграция (заменила заглушку)
 
 Ключевые данные: tileColors ключ `'col_row'` (col=X, row=canvasRow, от верха). rowFromFloor = totalRows-1-canvasRow. Floor anchor: startY = H - rows*stepY. isFullyInsideMask принимает tileStartY_mm. resolveWallTile из schemaRenderer. mosaic_active=true — фильтр для стен.
+
+---
+
+## Аудит проекта — 2026-05-21 ✅
+
+### Code Review (requesting-code-review subagent)
+
+> Запущен как фоновый агент, результаты интегрированы ниже по итогам анализа.
+
+#### Сильные стороны кода (что работает хорошо — не трогать)
+
+- **pixelizerGeometry.js** — корректная реализация `isFullyInsideMask` с `tileStartY_mm` параметром. Floor anchor логика правильная (startY = H - rows*stepY). `Math.round()` применён к шагам сетки — скатерть-эффект исправлен.
+- **pixelizerSampler.js** — `averageColor()` корректно округляет границы пикселей через `Math.round`, предотвращая out-of-bounds чтение. `sampleWallColors()` правильно вычисляет floor anchor симметрично с renderer.
+- **schemaSVGBuilder.js** — `escapeXml()` корректно экранирует спецсимволы в SVG. `<symbol>/<use>` оптимизация при > 10 000 плиток — грамотное решение.
+- **WallCanvas.jsx** — правильный паттерн: touch listeners с `{ passive: false }` только для `touchmove` (e.preventDefault нужен для pinch). Cleanup через `removeEventListener` в return функции useEffect.
+- **persistence.js** — структура чистая, фото хранятся отдельно от state (правильное разделение).
+- **layoutStore.js** — `partialize` правильно исключает `sequence` из localStorage. `completedTiles` как массив для persist + Set в памяти — хорошее решение.
+- **SavedToast.jsx** — `unsub()` вызывается в cleanup useEffect, таймеры очищаются — нет утечек.
+- **86 тестов, все зелёные** — хорошее покрытие критических утилит.
+- **prefers-reduced-motion** — весь animations.css блок, нулевые длительности через `!important`.
+- **CSS `100dvh`** — правильно, а не `100vh` (iOS Safari safe area).
+
+#### Критичные проблемы
+
+1. **[КРИТИЧНО] Формула колонок в schemaRenderer/schemaSVGBuilder расходится с roomGeometry в 10 раз**  
+   - Файлы: `src/utils/schemaRenderer.js:52-53`, `src/utils/schemaSVGBuilder.js:38-39` vs `src/utils/roomGeometry.js:109`  
+   - Что не так: `schemaRenderer` и `schemaSVGBuilder` вычисляют `columns = Math.ceil(wallW_mm / (tileW + groutW))`, где `tileW = parseFloat(...) * 10` (единицы 0.1 мм), а `wallW_mm = parseFloat(wall.length) * 10` (мм). Формула делит мм на 0.1-мм — результат в 10 раз меньше правильного. Для стены 300 см с плиткой 20 мм: правильно 137 колонок, схема рисует 14.  
+   - Почему важно: схема и SVG-экспорт показывают принципиально неверную раскладку. Ключевая функция приложения работает неправильно.  
+   - Что сделать: унифицировать через единую функцию `wallGridMm(wall, globalTile)` в мм без коэффициентов масштаба. Вариант быстрее: в schemaRenderer/schemaSVGBuilder убрать `* 10` из `resolveWallTile` или делить обратно перед вычислением колонок.
+
+2. **[КРИТИЧНО] `byColor` режим укладки работает как `byRow` (palette = null)**  
+   - Файл: `src/components/layout/LayoutTab.jsx:89`  
+   - Что не так: `rebuildSequence(walls, tile, tileColors, null)` передаёт `null` как palette. Внутри `buildTileSequence` это → `new Map([])` → `hexToIndex.get(hex) = undefined` → `colorIndex = null` для всех плиток → `byColor` сортировка = `byRow`. Режим «по цветам» тихо не работает.  
+   - Что сделать: вычислить `palette = useMemo(() => buildPalette(walls, tileColors), [walls, tileColors])` в LayoutTab и передать в `rebuildSequence`.
+
+3. **[КРИТИЧНО] tile_overrides игнорируются при пикселизации и рендере canvas**  
+   - Файлы: `src/components/pixelizer/PixelizerTab.jsx:273-279`, `src/components/pixelizer/WallCanvas.jsx:129-136`  
+   - Что не так: `tileGrid` собирается из `parseFloat(tile.tile_width)` напрямую. Стена с tile_overrides получает неверные цвета из-за несовпадения размеров при сэмплировании.  
+   - Что сделать: использовать `resolveWallTile(wall, tile)` из schemaRenderer.js. Значения вернуть в мм (разделить на 10, т.к. resolveWallTile возвращает в 0.1 мм).
+
+4. **[КРИТИЧНО] handlePixelize — нет try/finally: sampling зависает навсегда при ошибке**  
+   - Файл: `src/components/pixelizer/PixelizerTab.jsx:255-296`  
+   - Что не так: если `createImageBitmap`, `sampleWallColors` или `loadPhoto` бросает ошибку (corrupt blob, out-of-memory, IndexedDB error) — `setSampling(false)` не вызывается, кнопка «Пикселизировать» остаётся навсегда заблокированной.  
+   - Что сделать: `try { ... } catch(e) { showToast('Ошибка: ' + e.message) } finally { setSampling(false) }`.
+
+5. **Web Worker не реализован — пикселизация в main thread**  
+   - Файл: `src/workers/.gitkeep`  
+   - Что не так: `sampleWallColors` выполняется в main thread. Для 18 750 плиток UI замерзает на 1–5 секунд на слабых iPhone. Зафиксировано в TEHC_STACK.md решение №6.  
+   - Что сделать: `src/workers/pixelize.worker.js` с OffscreenCanvas + Transferable Objects.
+
+6. **persistence.js — нет обработки ошибок IndexedDB**  
+   - Файл: `src/store/persistence.js:9-57`  
+   - Что не так: `initDB()`, `saveAll()`, `loadAll()` без `try/catch`. При QuotaExceededError или Safari Private Browsing — краш при старте.  
+   - Что сделать: try/catch + fallback на in-memory режим с предупреждением.
+
+7. **WallCanvas — нет devicePixelRatio: canvas мутный на Retina iPhone**  
+   - Файл: `src/components/pixelizer/WallCanvas.jsx` (весь)  
+   - Что не так: canvas размер без DPR. На iPhone 3x — 1/3 реального разрешения. schemaRenderer.js и LayoutWallPreview.jsx делают правильно — паттерн уже есть.  
+   - Что сделать: `canvas.width = dims.width * dpr; canvas.height = dims.height * dpr; ctx.scale(dpr, dpr)`.
+
+#### Важные проблемы
+
+8. **ImageBitmap никогда не закрывается — утечка GPU-памяти**  
+   - Файлы: `src/utils/pixelizerSampler.js:43`, `src/components/pixelizer/PixelizerTab.jsx:103`  
+   - Что не так: `createImageBitmap()` выделяет GPU-память, требует явного `bmp.close()`. В sampleWallColors — создаётся каждый раз, не закрывается. В photoCache — накапливается при добавлении фото.  
+   - Что сделать: `img.close()` после `getImageData` в sampleWallColors; `bmp.close()` при удалении фото из кеша.
+
+9. **Race condition в загрузке photoCache — нет cancellation**  
+   - Файл: `src/components/pixelizer/PixelizerTab.jsx:95-124`  
+   - Что не так: если `pixelizer.photoSettings` меняется пока `Promise.all` не завершился — предыдущий resolved promise записывает устаревшие данные в кеш. Может показать удалённое фото.  
+   - Что сделать: `let cancelled = false; ... .then(res => { if (cancelled) return; ... }); return () => { cancelled = true }`.
+
+10. **No code splitting — Three.js грузится при старте**  
+    - Файл: `src/App.jsx:5`  
+    - Three.js + R3F + Drei ≈ 600 кБ из 1145 кБ бандла. Не нужны при старте.  
+    - Что сделать: `React.lazy(() => import('./components/viewer/ViewerTab.jsx'))` + `<Suspense>`.
+
+11. **rebuildSequence не обновляет sequence при смене режима**  
+    - Файл: `src/store/layoutStore.js:25-27`  
+    - `setMode` делает `set({ mode, currentIndex: 0 })` без вызова rebuildSequence. Последовательность пересчитается только при следующем рендере LayoutTab через useEffect. В strict mode / двойном рендере это проблема.  
+    - Что сделать: вызвать rebuildSequence внутри setMode, или убедиться что useEffect в LayoutTab всегда видит актуальный mode при построении sequence.
+
+12. **ExportTab drag-handle touch target 24px < 44px**  
+    - Файл: `src/components/export/ExportTab.jsx:108-125`  
+    - `height:4 + padding:10×2 = 24px`. Negative margin не увеличивает touch zone.
+
+13. **eyeMode sync useEffect пропускает зависимость**  
+    - Файл: `src/components/pixelizer/PixelizerTab.jsx:127-130`  
+    - `pixelizer.gridVisible` читается внутри useEffect но не в deps array. При восстановлении из IndexedDB с другим значением — расхождение между UI и store.  
+    - Что сделать: добавить `pixelizer.gridVisible` в deps, или убрать двустороннюю синхронизацию (gridVisible уже корректно выводится в renderParams на строке 307-314).
+
+14. **layoutStore.isCompleted использует Array.includes — O(n) в hot render**  
+    - Файл: `src/store/layoutStore.js:60-63`  
+    - `completedTiles.includes(key)` вызывается для каждой плитки в LayoutWallPreview. При большой completedTiles — O(n²).  
+    - Что сделать: использовать `completedSet()` внутри isCompleted.
+
+15. **canvas._drawMeta — запись данных в DOM-узел**  
+    - Файл: `src/components/layout/LayoutWallPreview.jsx:196`  
+    - Anti-pattern. При замене canvasRef (key change) — старый `_drawMeta` теряется.  
+    - Что сделать: `useRef` для хранения метаданных.
+
+16. **restoreSnapshot — нет валидации полей**  
+    - Файл: `src/store/projectStore.js:165-171`  
+    - Импортированный JSON без валидации → мусор в store.  
+    - Что сделать: минимальная проверка типов (walls — Array, tile — object).
+
+17. **JSON импорт/экспорт UI не реализован**  
+    - Решение №35 и №64 из DECISIONS.md — активны, но `src/utils/projectIO.js` не создан, UI отсутствует. Пользователь не может сохранить проект.
+
+#### Незначительные замечания
+
+18. **vite.config.js — icon purpose 'any maskable' устарел**  
+    Файл: `vite.config.js:29`. Нужно два отдельных объекта: `{purpose:'any'}` и `{purpose:'maskable'}`.
+
+19. **theme_color `#1a1a1a` ≠ `#08080f`**  
+    Файлы: `index.html:5`, `vite.config.js:15`. Строка браузера при PWA-установке будет неверного цвета.
+
+20. **panoramaH не обновляется при изменении размера окна**  
+    Файл: `src/components/pixelizer/PixelizerTab.jsx:47-52`. Нет ResizeObserver — поворот устройства не обновляет canvasScale.
+
+21. **showToast timer не отменяется при unmount / повторном вызове**  
+    Файл: `src/components/pixelizer/PixelizerTab.jsx:133-136`. Быстрые повторные вызовы накапливают таймеры. Нужен useRef + clearTimeout.
+
+22. **SavedToast — `showOnTabs` создаётся при каждом рендере**  
+    Файл: `src/components/shared/SavedToast.jsx:12`. Константу вынести за пределы компонента.
+
+23. **Дублированный import в PixelizerTab**  
+    Файл: `src/components/pixelizer/PixelizerTab.jsx:5-6`. Два отдельных `import` из `pixelizerGeometry.js` — объединить в один.
+
+24. **countMaskedTiles не учитывает floor anchor**  
+    Файл: `src/utils/roomGeometry.js:56-61`. `rowStart = Math.ceil(my/stepY)` без tileStartY_mm поправки. Расхождение с isFullyInsideMask для стен разной высоты.
+
+---
+
+### Рекомендации по автоматизации (claude-automation-recommender)
+
+#### MCP серверы
+- **context7** — `claude mcp add context7 -- npx -y @upstash/context7-mcp`. Обоснование: Three.js/R3F, vite-plugin-pwa, Zustand — быстро меняющиеся API. Живая документация прямо в контексте.
+- **Playwright MCP** — `claude mcp add playwright -- npx @playwright/mcp@latest`. Playwright уже в devDependencies, нет ни одного визуального теста PWA.
+
+#### Хуки
+- **PostToolUse: авто-запуск vitest** при изменении `src/utils/**` — 86 тестов за 322ms, нулевая цена за caught regression.
+- **PreToolUse: защита design-документов** — `docs/sessions/state.md`, `planning/DECISIONS.md` не должны перезаписываться случайно.
+
+#### Скиллы
+- **`/drape-session`** — загружает контекст state.md + DECISIONS.md в начале новой сессии.
+- **`/pixelizer-smoke`** — быстрая проверка алгоритма пикселизации (критический путь).
+
+#### Плагины
+- Нет дополнительных рекомендаций.
+
+---
+
+### Производительность
+
+| Метрика | Значение | Оценка |
+|---|---|---|
+| Бандл (minified) | 1 145 кБ | ⚠️ Vite предупреждает (>500кБ) |
+| Бандл (gzip) | 321 кБ | Приемлемо |
+| Тесты (86 штук) | 322ms | ✅ Быстро |
+| Сборка | 6.29s | ✅ |
+
+**Главная проблема**: Three.js + R3F + Drei ≈ 600 кБ грузятся сразу при старте приложения, хотя 3D-вкладка нужна не всегда. Нет `React.lazy` ни для одного из 5 компонентов вкладок.
+
+**Web Worker**: директория `src/workers/` существует, но содержит только `.gitkeep`. Пикселизация идёт в main thread через `sampleWallColors()` → `document.createElement('canvas')` → `getImageData()`. На большой стене (18 750 плиток) UI замерзает.
+
+**Что хорошо**: `useMemo` для canvasScale, photoGroups, visibleWalls — правильно. photoCache как Map с lazy loading — правильно. `frameloop="demand"` в R3F Canvas — экономия батареи.
+
+---
+
+### Тесты — покрытие
+
+**Покрыто (86 тестов):**
+- `pixelizerGeometry.test.js` — все функции, включая floor anchor и isFullyInsideMask ✅
+- `pixelizerSampler.test.js` — averageColor ✅
+- `schemaRenderer.test.js` (20 тестов) — buildPalette, withSurplus, resolveWallTile, contrastColor, buildSchemaLayout ✅
+- `layoutSequencer.test.js` (25 тестов) — buildTileSequence, getTileAt, findTileIndex ✅
+- `computeWallPositions.test.js`, `roomGeometry.test.js`, `buildTileTexture.test.js` ✅
+
+**Не покрыто (критично):**
+- `pixelizerRenderer.js` — нет тестов. Canvas-зависимость, но floor anchor логика в `drawWallPhoto`/`drawWallMosaic` тестируемая через mock canvas.
+- `schemaSVGBuilder.js` — явно упомянуто в state.md «тесты не написаны». Чистая функция, легко тестировать без DOM (только `buildSchemaSVG`, не `downloadSVG`).
+- `buildPalette.js` — нет отдельных тестов (только косвенно через schemaRenderer.test).
+- `persistence.js` — нет тестов. IndexedDB тестируется через mock.
+- `layoutStore.js` — нет тестов (Zustand store с persist).
+- `roomGeometry.js: countMaskedTiles` — не покрыто изолированно.
+
+---
+
+### PWA
+
+| Параметр | Статус |
+|---|---|
+| vite-plugin-pwa подключён | ✅ |
+| Service Worker (precache) | ✅ `registerType: 'autoUpdate'` |
+| manifest (name, short_name, display) | ✅ |
+| icons 192 + 512 | ✅ |
+| viewport-fit=cover | ✅ (index.html) |
+| offline работа | ✅ (precache всех ассетов) |
+| apple-touch-icon | ⚠️ Нет в `public/`, только в manifest |
+| icon purpose формат | ⚠️ `'any maskable'` вместо двух отдельных объектов |
+| theme_color | ⚠️ `#1a1a1a` ≠ `#08080f` из дизайн-системы |
+
+---
+
+### Доступность и UX
+
+**Хорошо:**
+- `aria-label` есть на всех кнопках-иконках (ViewerToolbar, LayoutNav, SchemaLegend) ✅
+- `prefers-reduced-motion` обнуляет все duration через `!important` ✅
+- Touch targets ≥ 44px: nav-tab (~52px), WallCard delete (44×44), LayoutNav prev/next (68px), «К плитке» (48px) ✅
+- `role="separator"` на drag-handle в ExportTab ✅
+
+**Проблемы:**
+- **ExportTab drag-handle**: `height:4 + padding:10 = 24px` — ниже 44px минимума. Критично для mobile UX.
+- WallCanvas `<canvas>` без `role` и `aria-label` — screen reader не понимает что это.
+
+---
+
+### Хранилище и данные
+
+| Сценарий | Обработка |
+|---|---|
+| IndexedDB недоступна (Safari incognito) | ❌ Краш при initDB() — нет try/catch |
+| QuotaExceededError при saveAll() | ❌ Необработанное исключение |
+| loadAll() с битыми данными | ❌ Нет try/catch |
+| restoreSnapshot с невалидным JSON | ⚠️ Нет валидации полей |
+| createImageBitmap невалидного фото | ✅ Бросит ошибку — natural error handling |
+| Большой base64 в JSON экспорте | — JSON экспорт UI не реализован |
+
+**JSON экспорт/импорт**: полностью отсутствует в UI. `src/utils/projectIO.js` из TEHC_STACK.md не создан. Пользователь не может сделать бэкап проекта.
+
+---
+
+### Мобильная специфика
+
+| Параметр | Статус |
+|---|---|
+| `100dvh` вместо `100vh` | ✅ App.css |
+| `env(safe-area-inset-bottom)` | ✅ Применено в 8 местах |
+| WallCanvas devicePixelRatio | ❌ Не учитывается — мутные плитки на Retina |
+| SchemaView (drawSchema) devicePixelRatio | ✅ `window.devicePixelRatio || 1` |
+| LayoutWallPreview devicePixelRatio | ✅ |
+| Горизонтальная ориентация | ⚠️ Не тестировалось |
+| iOS font-size 200% | — Все размеры в px, не rem — потенциальная проблема |
+
+**WallCanvas Retina**: самый серьёзный визуальный баг для основного сценария. SchemaView и LayoutWallPreview делают правильно — паттерн есть, нужно применить.
+
+---
+
+### Безопасность
+
+| Параметр | Статус |
+|---|---|
+| `dangerouslySetInnerHTML` | ✅ Отсутствует |
+| `eval()` | ✅ Отсутствует |
+| SVG escapeXml() | ✅ Корректен |
+| restoreSnapshot без валидации | ⚠️ |
+| Photo MIME validation | ✅ `createImageBitmap` упадёт на невалидном |
+| IndexedDB ключи без sanitize | ✅ Только system-generated IDs |
+
+---
+
+### Приоритизированный план действий
+
+#### Критично (сделать до первого реального использования):
+
+1. **Исправить формулу колонок в schemaRenderer/schemaSVGBuilder** — сейчас схема показывает в ~10 раз меньше плиток чем есть на самом деле. Ключевой функционал приложения работает неправильно. Унифицировать через общую функцию с roomGeometry.
+
+2. **LayoutTab: передать palette в rebuildSequence** — режим «по цветам» тихо работает как «по рядам». Два вычисления: `useMemo(() => buildPalette(walls, tileColors))` и передать в `rebuildSequence`.
+
+3. **PixelizerTab/WallCanvas: resolveWallTile** — tile_overrides игнорируются при пикселизации и рендере. Неверные цвета при использовании tile_overrides.
+
+4. **handlePixelize: добавить try/finally** — при любой ошибке кнопка зависает навсегда. Одна строка `finally { setSampling(false) }`.
+
+5. **persistence.js: добавить try/catch** — краш при Safari incognito или QuotaExceededError. Fallback на in-memory режим.
+
+6. **WallCanvas: devicePixelRatio** — мутные плитки на iPhone 3x. Паттерн уже есть в schemaRenderer.js.
+
+#### Важно (сделать до релиза):
+
+7. **ImageBitmap.close()** — утечка GPU-памяти. В sampleWallColors после getImageData, при удалении фото из кеша.
+
+8. **JSON экспорт/импорт UI** — пользователь не может сохранить проект. projectIO.js + кнопки в UI.
+
+9. **Code splitting для Three.js** — `React.lazy(() => import('./components/viewer/ViewerTab.jsx'))`. 600 кБ при старте, 30 минут работы.
+
+10. **Race condition в photoCache**: добавить `cancelled` флаг в useEffect загрузки фото.
+
+11. **eyeMode useEffect: добавить pixelizer.gridVisible в deps** — расхождение UI/store при восстановлении из IndexedDB.
+
+12. **ExportTab drag-handle**: увеличить touch target до 44px.
+
+13. **Web Worker реализация** — большая задача (TEHC_STACK.md §6). Отдельная сессия.
+
+#### Желательно (можно позже):
+
+14. **schemaSVGBuilder тесты** — `buildSchemaSVG` чистая функция без DOM. Нужны после исправления формулы колонок.
+
+15. **layoutStore.isCompleted через completedSet()** — O(n) → O(1).
+
+16. **canvas._drawMeta → useRef** в LayoutWallPreview.
+
+17. **calculateGrid поднять в PixelizerTab** через useMemo — убрать дублирование в каждом WallCanvas.
+
+18. **theme_color**: `#1a1a1a` → `#08080f` в index.html и vite.config.js.
+
+19. **icon purpose**: разделить на два отдельных объекта.
+
+20. **panoramaH ResizeObserver** — обновлять canvasScale при повороте устройства.
+
+21. **showToast timer useRef + clearTimeout** — не накапливать таймеры.
+
+22. **countMaskedTiles: floor anchor** — согласовать с isFullyInsideMask или задокументировать.
+
+23. **iOS font-size 200%** — рассмотреть переход с px на rem.
