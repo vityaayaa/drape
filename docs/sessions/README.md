@@ -32,3 +32,10 @@
 - [2.3](prompts/2.3-room-polish.md) — Полировка Комнаты
 - [2.4](prompts/2.4-animations.md) — Анимации
 - [2.5](prompts/2.5-onboarding-impl.md) — Реализация онбординга
+
+### Фаза 3 — Вкладка «Схема»
+- [3.1](prompts/3.1-schema-ui.md) — Дизайн: split-screen layout и развёртка стен (`/ui-ux-pro-max`)
+- [3.2](prompts/3.2-schema-legend-ui.md) — Дизайн: легенда, спецификация, диалог экспорта (`/ui-ux-pro-max`)
+- [3.3](prompts/3.3-schema-render.md) — Код: рендер развёртки и палитра (`/brainstorming`)
+- [3.4](prompts/3.4-schema-legend.md) — Код: легенда и спецификация (`/brainstorming`)
+- [3.5](prompts/3.5-schema-svg-export.md) — Код: генерация и скачивание SVG (`/brainstorming`)
