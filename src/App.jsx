@@ -12,8 +12,8 @@ const TABS = [
   { id: 'room',      label: 'Комната', icon: LayoutGrid },
   { id: 'pixelizer', label: 'Фото',    icon: Camera },
   { id: 'viewer',    label: '3D',      icon: Box },
-  { id: 'export',    label: 'Схема',   icon: PenLine,  stub: true },
-  { id: 'layout',    label: 'Укладка', icon: Grid3x3,  stub: true },
+  { id: 'export',    label: 'Схема',   icon: PenLine },
+  { id: 'layout',    label: 'Укладка', icon: Grid3x3 },
 ]
 
 export default function App() {
