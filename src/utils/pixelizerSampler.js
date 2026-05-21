@@ -58,6 +58,7 @@ export async function sampleWallColors(
   ctx.globalAlpha = 1.0
 
   const { data: pixels } = ctx.getImageData(0, 0, canvasW, canvasH)
+  img.close()
   const result = {}
 
   const stepY_mm = tileH_mm + groutW_mm

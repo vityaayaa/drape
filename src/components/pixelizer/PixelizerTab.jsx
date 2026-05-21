@@ -94,6 +94,7 @@ export default function PixelizerTab() {
 
   // ── Загрузка кеша фото ──
   useEffect(() => {
+    let cancelled = false
     const photoIds = [...new Set(
       Object.values(pixelizer.photoSettings).map(s => s?.photoId).filter(Boolean)
     )]
@@ -109,11 +110,16 @@ export default function PixelizerTab() {
       const thumbUrl = tc.toDataURL('image/jpeg', 0.7)
       return { photoId, bmp, thumbUrl }
     })).then(results => {
+      if (cancelled) return
       const valid = results.filter(Boolean)
       if (!valid.length) return
       setPhotoCache(prev => {
         const n = new Map(prev)
-        valid.forEach(({ photoId, bmp }) => n.set(photoId, bmp))
+        valid.forEach(({ photoId, bmp }) => {
+          const old = n.get(photoId)
+          if (old && old !== bmp) old.close()
+          n.set(photoId, bmp)
+        })
         return n
       })
       setThumbCache(prev => {
@@ -122,6 +128,7 @@ export default function PixelizerTab() {
         return n
       })
     })
+    return () => { cancelled = true }
   }, [pixelizer.photoSettings])
 
   // ── Синхронизация eyeMode → store ──
