@@ -15,55 +15,43 @@ const CameraRig = forwardRef(function CameraRig(
     invalidate()
   }, [invalidate])
 
-  // Fix 1: set initial target imperatively on mount (not via controlled prop)
-  // + сразу применяем изометрический FOV, чтобы стартовый вид был ортографическим.
+  // Установить точку обзора на монтировании.
   useEffect(() => {
     if (!orbitRef.current) return
-    apiRef.current?.setView('iso')
+    orbitRef.current.target.set(...initialTarget)
+    orbitRef.current.update()
+    invalidate()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const apiRef = useRef(null)
   useImperativeHandle(
     ref,
-    () => {
-      const api = {
+    () => ({
       reset() {
-        api.setView('iso')
+        if (!orbitRef.current) return
+        // Обычный перспективный вид «по умолчанию» (3/4-ракурс).
+        camera.position.set(...initialPosition)
+        orbitRef.current.target.set(...initialTarget)
+        orbitRef.current.update()
+        invalidate()
       },
       setView(view) {
         if (!orbitRef.current) return
         const H = maxHeight / 2
-        const DEFAULT_FOV = 55
         if (view === 'front') {
-          if (camera.fov !== DEFAULT_FOV) { camera.fov = DEFAULT_FOV; camera.updateProjectionMatrix() }
           camera.position.set(cx, H, cz + camDist)
           orbitRef.current.target.set(cx, H, cz)
         } else if (view === 'top') {
-          if (camera.fov !== DEFAULT_FOV) { camera.fov = DEFAULT_FOV; camera.updateProjectionMatrix() }
-          // Fix 3: tiny Z offset to avoid polar singularity
+          // tiny Z offset to avoid polar singularity
           camera.position.set(cx, camDist * 1.5, cz + 1)
           orbitRef.current.target.set(cx, 0, cz)
         } else {
-          // iso — настоящий «изометрический» вид: узкий FOV ≈ ортографическая проекция.
-          // Камеру отодвигаем пропорционально, чтобы комната занимала тот же размер на экране.
-          const ISO_FOV = 14
-          const scaleF = Math.tan((DEFAULT_FOV / 2) * Math.PI / 180) /
-                         Math.tan((ISO_FOV / 2) * Math.PI / 180)
-          const isoDist = camDist * scaleF
-          const isoH = Math.SQRT1_2 * isoDist
-          const isoY = 0.5 * isoDist + maxHeight / 2
-          camera.fov = ISO_FOV
-          camera.updateProjectionMatrix()
-          camera.position.set(cx + isoH, isoY, cz + isoH)
-          orbitRef.current.target.set(cx, H, cz)
+          camera.position.set(...initialPosition)
+          orbitRef.current.target.set(...initialTarget)
         }
         orbitRef.current.update()
         invalidate()
       },
-      }
-      apiRef.current = api
-      return api
-    },
+    }),
     [initialPosition, initialTarget, camDist, cx, cz, maxHeight, camera, invalidate],
   )
 
@@ -186,7 +174,7 @@ const CameraRig = forwardRef(function CameraRig(
       rotateSpeed={0.6}
       zoomSpeed={0.8}
       minDistance={50}
-      maxDistance={camDist * 6}
+      maxDistance={camDist * 3}
       minPolarAngle={0}
       maxPolarAngle={Math.PI}
       enablePan

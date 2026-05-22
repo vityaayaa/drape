@@ -19,7 +19,7 @@ const DEFAULT_PIXELIZER = {
   photoSettings: {},       // wallId → { photoId, offsetX_mm, offsetY_mm, scale, opacity }
   tileColors: {},          // wallId → { 'col_row': '#rrggbb' }
   tileColorsStale: {},     // wallId → bool
-  quantize: null,          // null = без квантизации; число = целевое кол-во цветов
+  quantize: 128,           // null = без квантизации; число = целевое кол-во цветов
 }
 
 export const useProjectStore = create((set, get) => ({

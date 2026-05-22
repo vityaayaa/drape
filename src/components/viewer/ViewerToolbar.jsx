@@ -4,9 +4,9 @@ import { RotateCcw, Square, Layers, Box } from 'lucide-react'
 const HINT_KEY = 'drape_3d_hint_shown'
 
 const VIEWS = [
-  { id: 'front', label: 'Спереди', icon: Square },
-  { id: 'top',   label: 'Сверху',  icon: Layers },
-  { id: 'iso',   label: 'Изометрия', icon: Box },
+  { id: 'default', label: 'Обзор',   icon: Box },
+  { id: 'front',   label: 'Спереди', icon: Square },
+  { id: 'top',     label: 'Сверху',  icon: Layers },
 ]
 
 export default function ViewerToolbar({ onReset, onSetView, activeView }) {

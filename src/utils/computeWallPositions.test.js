@@ -59,7 +59,7 @@ describe('computeWallPositions', () => {
     const { positions } = computeWallPositions(walls, corners)
     // wall2: dir=-60°, trimmed (i=1), startTrim=thickness/2=5, endTrim=0, renderL=195
     // startX = 300 + cos(-π/3)*5 = 302.5, cx = 302.5 + cos(-π/3)*97.5 = 351.25
-    // cz = sin(-π/3)*5 + sin(-π/3)*97.5 = sin(-π/3)*102.5
+    // cz = sin(-π/3)*102.5
     expect(round(positions[1].position[0])).toBe(351.25)
     expect(round(positions[1].position[2])).toBe(round(-Math.sqrt(3) / 2 * 102.5))
   })
@@ -90,7 +90,7 @@ describe('computeWallPositions', () => {
     ]
     const corners = { 'w1-w2': { overlap: 'auto', angle: 90 } }
     const { center } = computeWallPositions(walls, corners)
-    // wall1 center: (150,125,0), wall2 center: (300,125,-105) → avg: (225,125,-51.25)
+    // wall1 center: (150,125,0), wall2 center: (300,125,-105) → avg: (225,125,-52.5)
     expect(rp(center)).toEqual([225, 125, -51.25])
   })
 })

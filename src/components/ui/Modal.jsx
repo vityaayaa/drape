@@ -2,6 +2,7 @@
 // Центрированная модалка (по центру экрана, не bottom-sheet).
 // Используется для всех всплывающих окон, чтобы нижняя навигация их не перекрывала.
 import { useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 import IconButton from './IconButton.jsx'
 
@@ -15,7 +16,9 @@ export default function Modal({ open, onClose, title, children, footer, maxWidth
 
   if (!open) return null
 
-  return (
+  // Портал в body — иначе position:fixed ломается внутри предков с backdrop-filter/transform
+  // (модалка прилипала к верху экрана вместо центра).
+  return createPortal(
     <div style={s.overlay} onClick={() => onClose?.()}>
       <div style={{ ...s.modal, maxWidth }} onClick={(e) => e.stopPropagation()}>
         {(title || onClose) && (
@@ -27,7 +30,8 @@ export default function Modal({ open, onClose, title, children, footer, maxWidth
         <div style={s.content}>{children}</div>
         {footer && <div style={s.footer}>{footer}</div>}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 

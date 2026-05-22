@@ -137,13 +137,6 @@ export default function PhotoPanorama({
 
       {/* Метка текущего режима вида */}
       <EyeLabel eyeMode={eyeMode} />
-
-      {/* Подсказка жестов в режиме редактирования — рядом с кнопками */}
-      {isTransform && (
-        <div style={s.gestureHint}>
-          1 палец — двигать · щипок — масштаб
-        </div>
-      )}
     </div>
   )
 }

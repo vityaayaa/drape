@@ -43,9 +43,11 @@ export default function WallMesh({ wall, tile, tileColors, position, rotationY, 
   const EXTERIOR = '#3b425a'   // приятный нейтральный exterior (не чёрный)
   const FRAME    = '#4a5568'   // торцы стены
 
-  // material-4 = +Z грань, material-5 = -Z грань
+  // material-4 = +Z грань, material-5 = -Z грань.
+  // Инвертированный выбор: чтобы ориентация совпадала с развёрткой во вкладке «Фото»
+  // (раньше содержимое стен было зеркальным).
   const interiorIsPositive = interiorSide === 'positive'
-  const interiorTexture = interiorIsPositive ? texture : textureFlipped
+  const interiorTexture = interiorIsPositive ? textureFlipped : texture
 
   return (
     <mesh position={position} rotation={[0, rotationY, 0]}>

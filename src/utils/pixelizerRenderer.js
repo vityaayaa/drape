@@ -120,39 +120,45 @@ export function drawWallPhoto(
     }
   }
 
-  // Сетка
+  // Сетка — все размеры считаем во float, округляем ТОЛЬКО границы плиток.
+  // Иначе из-за независимого округления позиции и высоты ряды «скачут» (X2/X).
   if (gridVisible && columns > 0 && rows > 0) {
-    const tileWpx = Math.round(tileW_mm * canvasScale)
-    const tileHpx = Math.round(tileH_mm * canvasScale)
-    // Шов: 0 если задано 0, иначе минимум 1px для видимости при крошечном масштабе
-    const groutPx = groutW_mm > 0
-      ? Math.max(1, Math.round(groutW_mm * canvasScale))
-      : 0
-    const stepX = tileWpx + groutPx
-    const stepY = tileHpx + groutPx
+    const stepXf = (tileW_mm + groutW_mm) * canvasScale
+    const stepYf = (tileH_mm + groutW_mm) * canvasScale
+    const tileWf = tileW_mm * canvasScale
+    const tileHf = tileH_mm * canvasScale
     const startY = floorAnchorStartY(H, rows, tileH_mm, groutW_mm, canvasScale)
     const tileStartY_mm = startY / canvasScale
+    // Граница плитки i по X/Y — округлённая, общая для соседних плиток.
+    const xEdge = (i) => Math.round(i * stepXf)
+    const xTileEnd = (i) => Math.round(i * stepXf + tileWf)
+    const yEdge = (i) => Math.round(startY + i * stepYf)
+    const yTileEnd = (i) => Math.round(startY + i * stepYf + tileHf)
 
     if (showPhoto) {
-      // photo+grid: translucent grout lines over photo
+      // photo+grid: полупрозрачные линии шва поверх фото (равномерные)
       ctx.save()
-      ctx.globalAlpha = 0.28
-      ctx.fillStyle = groutColor || '#cccccc'
-      for (let col = 0; col < columns; col++) {
-        ctx.fillRect(Math.round(col * stepX + tileWpx), 0, groutPx, H)
+      ctx.globalAlpha = 0.30
+      ctx.fillStyle = groutColor && groutColor !== '#000000' ? groutColor : '#cccccc'
+      const lineW = Math.max(1, Math.round(groutW_mm * canvasScale)) || 1
+      for (let col = 0; col < columns - 1; col++) {
+        ctx.fillRect(xTileEnd(col), 0, lineW, H)
       }
-      for (let row = 0; row < rows; row++) {
-        ctx.fillRect(0, Math.round(startY + row * stepY + tileHpx), W, groutPx)
+      for (let row = 0; row < rows - 1; row++) {
+        ctx.fillRect(0, yTileEnd(row), W, lineW)
       }
       ctx.restore()
     } else {
-      // grid only: tiles on grout background
+      // grid only: плитки на фоне шва, границы пиксель-выровнены
       ctx.fillStyle = '#3a3a4a'
       for (let row = 0; row < rows; row++) {
+        const y0 = yEdge(row)
+        const y1 = yTileEnd(row)
         for (let col = 0; col < columns; col++) {
           if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm)) continue
-          const r = tileRect(col, row, tileW_mm, tileH_mm, groutW_mm, canvasScale)
-          ctx.fillRect(r.x, Math.round(r.y + startY), r.w, r.h)
+          const x0 = xEdge(col)
+          const x1 = xTileEnd(col)
+          ctx.fillRect(x0, y0, x1 - x0, y1 - y0)
         }
       }
     }

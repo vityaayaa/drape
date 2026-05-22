@@ -8,15 +8,15 @@ export default function RoomScene({ positions, cx, cz, maxHeight }) {
   const tile = useProjectStore((s) => s.tile)
   const tileColors = useProjectStore((s) => s.pixelizer.tileColors)
 
-  // Сетка пола: крупные клетки по 0.5 м (500 мм). 20000/40 = 500.
+  // Единицы мира = см (1 ед = 1 см). Клетка 0.5 м = 50 ед → 20000/50 = 400 делений.
   const gridLarge = useMemo(
-    () => new THREE.GridHelper(20000, 40, '#3a3f52', '#252b3b'),
+    () => new THREE.GridHelper(20000, 400, '#3a3f52', '#2a3042'),
     [],
   )
-  // Мелкая сетка по 0.1 м (100 мм). 20000/200 = 100.
+  // Крупный акцент каждые 2.5 м (250 ед) → 20000/250 = 80.
   const gridSmall = useMemo(() => {
-    const g = new THREE.GridHelper(20000, 200, '#1e2435', '#181d2b')
-    g.position.y = 0.1
+    const g = new THREE.GridHelper(20000, 80, '#454b60', '#1e2435')
+    g.position.y = -0.1
     return g
   }, [])
 

@@ -29,9 +29,9 @@ describe('buildSchemaSVG', () => {
     const walls = [makeWall('w1', '10', '10')]
     const tile = { tile_width: '20', tile_height: '20', grout_width: '0', grout_color: '#ccc' }
     const result = buildSchemaSVG({ walls, tile, tileColors: {}, palette: [] })
-    // 25 плиток + 2 rect (фон стены, рамка стены) + 1 SVG-фон + 1 легенда-шапка = 29
+    // Только мозаика: 25 плиток + 1 rect фона шва стены = 26
     const count = (result.match(/<rect/g) ?? []).length
-    expect(count).toBe(29)
+    expect(count).toBe(26)
   })
 
   it('режим real: содержит width="...mm"', () => {
@@ -46,10 +46,10 @@ describe('buildSchemaSVG', () => {
     expect(result).toContain('width="100%"')
   })
 
-  it('стена без размеров — placeholder с rect', () => {
+  it('стена без размеров — пропускается, без NaN', () => {
     const walls = [makeWall('w1', '', '')]
     const result = buildSchemaSVG({ walls, tile: makeTile(), tileColors: {}, palette: [] })
-    expect(result).toContain('<rect')
+    expect(result).toMatch(/^<svg/)
     expect(result).not.toContain('NaN')
   })
 

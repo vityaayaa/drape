@@ -10,6 +10,7 @@ import LayoutModeSwitch    from './LayoutModeSwitch.jsx'
 import LayoutDoneScreen    from './LayoutDoneScreen.jsx'
 import EmptyState          from '../ui/EmptyState.jsx'
 import { buildPalette }    from '../../utils/buildPalette.js'
+import { buildQuantizeMap, quantizeTileColors, applyQuantization } from '../../utils/quantizeColors.js'
 
 function useWakeLock(enabled) {
   const lockRef = useRef(null)
@@ -44,6 +45,7 @@ export default function LayoutTab() {
   const tile       = useProjectStore((st) => st.tile)
   const walls      = useProjectStore((st) => st.walls)
   const tileColors = useProjectStore((st) => st.pixelizer.tileColors)
+  const quantize   = useProjectStore((st) => st.pixelizer.quantize)
   const setTab     = useProjectStore((st) => st.setActiveTab)
 
   const {
@@ -54,14 +56,21 @@ export default function LayoutTab() {
     completedSet,
   } = useLayoutStore()
 
+  // Квантизация — чтобы цвета укладки совпадали с Фото/Схемой.
+  const rawPalette = useMemo(() => buildPalette(walls, tileColors), [walls, tileColors])
+  const quantMap = useMemo(() => buildQuantizeMap(rawPalette, quantize), [rawPalette, quantize])
+  const dispTileColors = useMemo(
+    () => quantizeTileColors(tileColors, quantMap),
+    [tileColors, quantMap]
+  )
   const palette = useMemo(
-    () => buildPalette(walls, tileColors),
-    [walls, tileColors]
+    () => (quantMap ? applyQuantization(rawPalette, quantMap) : rawPalette),
+    [rawPalette, quantMap]
   )
 
   useEffect(() => {
-    rebuildSequence(walls, tile, tileColors, palette)
-  }, [walls, tile, tileColors, rebuildSequence, palette, mode])
+    rebuildSequence(walls, tile, dispTileColors, palette)
+  }, [walls, tile, dispTileColors, rebuildSequence, palette, mode])
 
   useWakeLock(true)
 
@@ -133,7 +142,7 @@ export default function LayoutTab() {
           <LayoutWallPreview
             wall={currentWall}
             globalTile={tile}
-            tileColors={tileColors}
+            tileColors={dispTileColors}
             currentTile={activeTile ? {
               wallId: activeTile.wallId,
               col:    activeTile.col,

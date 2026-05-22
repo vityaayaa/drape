@@ -121,11 +121,16 @@ export default function PixelizerTab() {
       const blob = await loadPhoto(photoId)
       if (!blob) return null
       const bmp = await createImageBitmap(blob)
-      // Миниатюра для PhotoCard
+      // Миниатюра для PhotoCard — высокое разрешение, cover (без искажений)
+      const TW = 280, TH = 200
       const tc = document.createElement('canvas')
-      tc.width = 60; tc.height = 40
-      tc.getContext('2d').drawImage(bmp, 0, 0, 60, 40)
-      const thumbUrl = tc.toDataURL('image/jpeg', 0.7)
+      tc.width = TW; tc.height = TH
+      const tctx = tc.getContext('2d')
+      tctx.imageSmoothingQuality = 'high'
+      const scale = Math.max(TW / bmp.width, TH / bmp.height)
+      const dw = bmp.width * scale, dh = bmp.height * scale
+      tctx.drawImage(bmp, (TW - dw) / 2, (TH - dh) / 2, dw, dh)
+      const thumbUrl = tc.toDataURL('image/jpeg', 0.85)
       return { photoId, bmp, thumbUrl }
     })).then(results => {
       if (cancelled) return
@@ -166,20 +171,14 @@ export default function PixelizerTab() {
     return () => clearTimeout(toastTimerRef.current)
   }, [])
 
-  // ── Eye cycling ──
-  // До пикселизации: фото → фото+сетка. После: + мозаика → мозаика+сетка.
+  // ── Eye cycling ── 3 режима всегда доступны: фото → фото+сетка → мозаика → фото
   const cycleEye = useCallback(() => {
-    if (pixelizer.mode === 'mosaic') {
-      setEyeMode(m => ({
-        'photo':       'photo+grid',
-        'photo+grid':  'mosaic',
-        'mosaic':      'mosaic+grid',
-        'mosaic+grid': 'photo',
-      }[m] ?? 'mosaic'))
-    } else {
-      setEyeMode(m => (m === 'photo' ? 'photo+grid' : 'photo'))
-    }
-  }, [pixelizer.mode])
+    setEyeMode(m => ({
+      'photo':      'photo+grid',
+      'photo+grid': 'mosaic',
+      'mosaic':     'photo',
+    }[m] ?? 'photo'))
+  }, [])
 
   // ── addPhoto flow ──
   function handleAddPhoto() {
@@ -221,6 +220,7 @@ export default function PixelizerTab() {
     }
     setActivePhotoId(photoId)
     setUiMode('transform')
+    setEyeMode('photo')   // чтобы фото было видно (а не мозаика)
   }
 
   // ── Transform ──
@@ -260,12 +260,25 @@ export default function PixelizerTab() {
 
   const handlePhotoGestureScale = useCallback((newScale) => {
     const activeWalls = walls.filter(w => pixelizer.photoSettings[w.id]?.photoId === activePhotoId)
+    if (!activeWalls.length) return
+    // Масштабируем вокруг центра фото: компенсируем offset, иначе фото «уезжает» в угол.
+    const groupTotalWidth_mm = activeWalls.reduce((sum, w) => sum + (parseFloat(w.length) || 0) * 10, 0)
+    const photo = photoCache.get(activePhotoId)
+    const aspect = photo ? photo.height / photo.width : 0.75
     activeWalls.forEach(w => {
       const ps = pixelizer.photoSettings[w.id]
       if (!ps) return
-      setPhotoSettings(w.id, { ...ps, scale: newScale })
+      const oldScale = ps.scale ?? 1
+      const dW = groupTotalWidth_mm * (oldScale - newScale)            // изменение ширины фото (мм)
+      const dH = groupTotalWidth_mm * aspect * (oldScale - newScale)   // изменение высоты фото (мм)
+      setPhotoSettings(w.id, {
+        ...ps,
+        scale: newScale,
+        offsetX_mm: (ps.offsetX_mm ?? 0) + dW / 2,
+        offsetY_mm: (ps.offsetY_mm ?? 0) + dH / 2,
+      })
     })
-  }, [walls, pixelizer.photoSettings, activePhotoId, setPhotoSettings])
+  }, [walls, pixelizer.photoSettings, activePhotoId, setPhotoSettings, photoCache])
 
   const handleDeletePhoto = useCallback(async (photoId) => {
     walls.forEach(w => {
@@ -345,15 +358,12 @@ export default function PixelizerTab() {
     })
   }
 
-  // ── Render params (что рисует canvas) ──
-  const renderParams = useMemo(() => {
-    const isMosaic = pixelizer.mode === 'mosaic' && (eyeMode === 'mosaic' || eyeMode === 'mosaic+grid')
-    return {
-      useMosaic:   isMosaic,
-      hidePhoto:   !isMosaic && eyeMode === 'grid',
-      gridVisible: eyeMode === 'photo+grid' || eyeMode === 'grid' || eyeMode === 'mosaic+grid',
-    }
-  }, [pixelizer.mode, eyeMode])
+  // ── Render params (что рисует canvas) ── eyeMode напрямую управляет показом
+  const renderParams = useMemo(() => ({
+    useMosaic:   eyeMode === 'mosaic',
+    hidePhoto:   false,
+    gridVisible: eyeMode === 'photo+grid',
+  }), [eyeMode])
 
   // ── Квантизация для отображения мозаики ──
   const rawPalette = useMemo(
@@ -461,13 +471,16 @@ export default function PixelizerTab() {
         <div style={s.quantList}>
           {QUANT_OPTIONS.map((opt) => {
             const active = (pixelizer.quantize ?? null) === opt.count
+            const label = opt.count === null
+              ? `Без квантизации (${rawPalette.length})`
+              : opt.label
             return (
               <button
                 key={opt.id}
                 style={{ ...s.quantOpt, ...(active ? s.quantOptActive : {}) }}
-                onClick={() => { setQuantize(opt.count); setPixelizerMode('mosaic'); setEyeMode('mosaic') }}
+                onClick={() => { setQuantize(opt.count); setEyeMode('mosaic') }}
               >
-                {opt.label}
+                {label}
                 {active && <span style={s.quantCheck}>✓</span>}
               </button>
             )
@@ -502,9 +515,9 @@ const s = {
     overflow: 'hidden',
   },
   panorama: {
-    height: '50vh',
-    minHeight: 240,
-    maxHeight: '60vh',
+    height: '42vh',
+    minHeight: 200,
+    maxHeight: '46vh',
     flexShrink: 0,
   },
   bottom: {

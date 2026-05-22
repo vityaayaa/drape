@@ -13,7 +13,7 @@ export default function ViewerTab() {
   const corners = useProjectStore((s) => s.corners)
   const setActiveTab = useProjectStore((s) => s.setActiveTab)
   const cameraRef = useRef()
-  const [activeView, setActiveView] = useState('iso')
+  const [activeView, setActiveView] = useState('default')
 
   const activeWalls = walls.filter(
     (w) => w.wall_active && parseFloat(w.length) > 0 && parseFloat(w.height) > 0,
@@ -23,8 +23,8 @@ export default function ViewerTab() {
   // это сбрасывает камеру на начальные параметры автоматически
   const canvasKey = activeWalls.map((w) => w.id).join(',')
 
-  // Sync activeView to 'iso' when canvas remounts (wall set changed)
-  useEffect(() => { setActiveView('iso') }, [canvasKey])
+  // Sync activeView to default when canvas remounts (wall set changed)
+  useEffect(() => { setActiveView('default') }, [canvasKey])
 
   if (activeWalls.length === 0) {
     return (
@@ -46,16 +46,15 @@ export default function ViewerTab() {
 
   const cx = center[0]
   const cz = center[2]
-  // Изометрия (cabinet ≈ 45° горизонтально, ≈30° вертикально):
-  // x = z = cos(45°)·d, y = sin(30°)·d. Используем чуть более «строгие» углы.
-  const isoH = Math.SQRT1_2 * camDist            // ≈0.707
-  const isoY = 0.5 * camDist + maxHeight / 2     // ≈30° вверх
-  const initialPosition = [cx + isoH, isoY, cz + isoH]
+  // Обычный перспективный 3/4-ракурс (не изометрия): камера сбоку-сверху-спереди.
+  const offH = Math.SQRT1_2 * camDist
+  const offY = 0.5 * camDist + maxHeight / 2
+  const initialPosition = [cx + offH, offY, cz + offH]
   const initialTarget   = [cx, maxHeight / 2, cz]
 
   function handleReset() {
     cameraRef.current?.reset()
-    setActiveView('iso')
+    setActiveView('default')
   }
 
   function handleSetView(view) {
