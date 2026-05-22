@@ -20,8 +20,13 @@ async function bootstrap() {
     </React.StrictMode>
   )
 
-  // 4. Подписаться на изменения — авто-сохранение при каждом обновлении
-  useProjectStore.subscribe(() => saveAll())
+  // 4. Подписаться на изменения — авто-сохранение с debounce, чтобы не спамить
+  //    IndexedDB на каждый тик слайдера (цветокоррекция, прозрачность и т.п.).
+  let saveTimer = null
+  useProjectStore.subscribe(() => {
+    clearTimeout(saveTimer)
+    saveTimer = setTimeout(() => saveAll(), 400)
+  })
 }
 
 bootstrap()

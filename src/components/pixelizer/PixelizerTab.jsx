@@ -20,11 +20,11 @@ import { LayoutGrid } from 'lucide-react'
 
 const QUANT_OPTIONS = [
   { id: 'off', label: 'Без квантизации', count: null },
+  { id: '512', label: '512 цветов', count: 512 },
   { id: '256', label: '256 цветов', count: 256 },
   { id: '128', label: '128 цветов', count: 128 },
   { id: '64',  label: '64 цвета',   count: 64 },
   { id: '32',  label: '32 цвета',   count: 32 },
-  { id: '16',  label: '16 цветов',  count: 16 },
 ]
 
 export default function PixelizerTab() {

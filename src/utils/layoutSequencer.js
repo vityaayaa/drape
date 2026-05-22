@@ -18,8 +18,10 @@ function wallGrid(wall, globalTile) {
   const wallW_mm = parseFloat(wall.length) * 10
   const wallH_mm = parseFloat(wall.height) * 10
   if ([tileW, tileH, wallW_mm, wallH_mm].some((v) => isNaN(v) || v <= 0)) return null
-  const cols = Math.floor((wallW_mm + groutW) / (tileW + groutW))
-  const rows = Math.floor((wallH_mm + groutW) / (tileH + groutW))
+  // ceil: крайнюю неполную плитку всё равно клеят (обрезанную) — считаем её.
+  // Совпадает со Схемой/3D/пикселизацией.
+  const cols = Math.ceil((wallW_mm + groutW) / (tileW + groutW))
+  const rows = Math.ceil((wallH_mm + groutW) / (tileH + groutW))
   if (cols <= 0 || rows <= 0) return null
   return { cols, rows, tileW, tileH, groutW, wallH_mm }
 }
@@ -60,7 +62,7 @@ export function buildTileSequence(walls, globalTile, tileColors, palette, mode) 
 
     for (let canvasRow = 0; canvasRow < rows; canvasRow++) {
       for (let col = 0; col < cols; col++) {
-        if (isFullyInsideMask(col, canvasRow, masks, tileW, tileH, groutW, tileStartY_mm)) continue
+        if (isFullyInsideMask(col, canvasRow, masks, tileW, tileH, groutW, tileStartY_mm, wallH_mm)) continue
 
         const rowFromFloor = rows - 1 - canvasRow
         const hex = wallColors[`${col}_${canvasRow}`] ?? groutColor

@@ -17,7 +17,9 @@ const TABS = [
 ]
 
 export default function App() {
-  const { activeTab, setActiveTab } = useProjectStore()
+  // Гранулярные селекторы — чтобы App не перерисовывался на любое изменение стора.
+  const activeTab = useProjectStore((s) => s.activeTab)
+  const setActiveTab = useProjectStore((s) => s.setActiveTab)
 
   return (
     <div className="app">

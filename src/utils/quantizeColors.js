@@ -106,13 +106,12 @@ export function quantizeColors(colorWeights, targetCount) {
     boxes = [...boxes.slice(0, idx), a, b, ...boxes.slice(idx + 1)]
   }
 
-  // Репрезентативный цвет каждого бокса = взвешенное среднее
+  // Репрезентативный цвет каждого бокса = самый «весомый» исходный цвет в нём
+  // (а не среднее) — иначе чистый оттенок «сползает» к соседнему (оранжевый→жёлтый).
   const reps = boxes.map((box) => {
-    const stats = boxStats(box)
-    return {
-      hex: rgbToHex(stats.avgR, stats.avgG, stats.avgB),
-      points: box,
-    }
+    let best = box[0]
+    for (const p of box) if (p.w > best.w) best = p
+    return { hex: best.hex, points: box }
   })
 
   // Mapping: каждый исходный hex → hex своего бокса
