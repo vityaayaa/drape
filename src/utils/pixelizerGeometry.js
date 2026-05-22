@@ -34,16 +34,21 @@ export function tileRect(col, row, tileW_mm, tileH_mm, groutW_mm, scale) {
   }
 }
 
-export function maskRectPx(mask, scale) {
+// mask.y задаётся ОТ ПОЛА (до низа маски). В canvas Y идёт сверху, поэтому при
+// известной высоте стены (wallH_mm) переводим: верх маски от верха = H - y - h.
+export function maskRectPx(mask, scale, wallH_mm = null) {
+  const y = parseFloat(mask.y)      * 10
+  const h = parseFloat(mask.height) * 10
+  const topY = wallH_mm != null ? (wallH_mm - y - h) : y
   return {
     x: parseFloat(mask.x)      * 10 * scale,
-    y: parseFloat(mask.y)      * 10 * scale,
+    y: topY * scale,
     w: parseFloat(mask.width)  * 10 * scale,
-    h: parseFloat(mask.height) * 10 * scale,
+    h: h * scale,
   }
 }
 
-export function isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm = 0) {
+export function isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm = 0, wallH_mm = null) {
   const stepX = tileW_mm + groutW_mm
   const stepY = tileH_mm + groutW_mm
   return masks.some((m) => {
@@ -54,7 +59,9 @@ export function isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm
     if ([mx, my, mw, mh].some(isNaN)) return false
     const colStart = Math.ceil(mx / stepX)
     const colEnd   = Math.floor((mx + mw) / stepX)
-    const adjMy    = my - tileStartY_mm
+    // Верх маски от верха стены (Y от пола → canvas сверху).
+    const topMy    = wallH_mm != null ? (wallH_mm - my - mh) : my
+    const adjMy    = topMy - tileStartY_mm
     const rowStart = Math.ceil(adjMy / stepY)
     const rowEnd   = Math.floor((adjMy + mh) / stepY)
     return col >= colStart && col < colEnd && row >= rowStart && row < rowEnd

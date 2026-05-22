@@ -12,14 +12,29 @@ import ActionBar from './ActionBar.jsx'
 import WallSelectSheet from './WallSelectSheet.jsx'
 import WallsSheet from './WallsSheet.jsx'
 import Toast from './Toast.jsx'
-import EmptyState from '../shared/EmptyState.jsx'
-import { Camera } from 'lucide-react'
+import EmptyState from '../ui/EmptyState.jsx'
+import Modal from '../ui/Modal.jsx'
+import { buildPalette } from '../../utils/buildPalette.js'
+import { buildQuantizeMap, quantizeTileColors } from '../../utils/quantizeColors.js'
+import { LayoutGrid } from 'lucide-react'
+
+const QUANT_OPTIONS = [
+  { id: 'off', label: 'Без квантизации', count: null },
+  { id: '512', label: '512 цветов', count: 512 },
+  { id: '256', label: '256 цветов', count: 256 },
+  { id: '128', label: '128 цветов', count: 128 },
+  { id: '64',  label: '64 цвета',   count: 64 },
+  { id: '32',  label: '32 цвета',   count: 32 },
+]
 
 export default function PixelizerTab() {
   const {
     walls, tile, corners, pixelizer,
-    setPixelizerMode, setGridVisible, setPhotoSettings, setTileColors,
+    setPixelizerMode, setGridVisible, setPhotoSettings, setTileColors, setQuantize,
+    removePhotoRestore,
   } = useProjectStore()
+
+  const [quantOpen, setQuantOpen] = useState(false)
 
   // ── UI State Machine ──
   const [uiMode, setUiMode] = useState('navigate') // 'navigate' | 'addPhoto' | 'transform'
@@ -30,6 +45,9 @@ export default function PixelizerTab() {
   const [eyeMode, setEyeMode] = useState(() =>
     pixelizer.mode === 'mosaic' ? 'mosaic' : (pixelizer.gridVisible ? 'photo+grid' : 'photo')
   )
+
+  // Снимок настроек фото на время редактирования (для «Отменить»).
+  const editSnapshotRef = useRef(null)
 
   // ── UI feedback ──
   const [toastMsg, setToastMsg]   = useState(null)
@@ -107,11 +125,16 @@ export default function PixelizerTab() {
       const blob = await loadPhoto(photoId)
       if (!blob) return null
       const bmp = await createImageBitmap(blob)
-      // Миниатюра для PhotoCard
+      // Миниатюра для PhotoCard — высокое разрешение, cover (без искажений)
+      const TW = 280, TH = 200
       const tc = document.createElement('canvas')
-      tc.width = 60; tc.height = 40
-      tc.getContext('2d').drawImage(bmp, 0, 0, 60, 40)
-      const thumbUrl = tc.toDataURL('image/jpeg', 0.7)
+      tc.width = TW; tc.height = TH
+      const tctx = tc.getContext('2d')
+      tctx.imageSmoothingQuality = 'high'
+      const scale = Math.max(TW / bmp.width, TH / bmp.height)
+      const dw = bmp.width * scale, dh = bmp.height * scale
+      tctx.drawImage(bmp, (TW - dw) / 2, (TH - dh) / 2, dw, dh)
+      const thumbUrl = tc.toDataURL('image/jpeg', 0.85)
       return { photoId, bmp, thumbUrl }
     })).then(results => {
       if (cancelled) return
@@ -152,14 +175,14 @@ export default function PixelizerTab() {
     return () => clearTimeout(toastTimerRef.current)
   }, [])
 
-  // ── Eye cycling ──
+  // ── Eye cycling ── 3 режима всегда доступны: фото → фото+сетка → мозаика → фото
   const cycleEye = useCallback(() => {
-    if (pixelizer.mode === 'mosaic') {
-      setEyeMode(m => m === 'mosaic' ? 'photo+grid' : 'mosaic')
-    } else {
-      setEyeMode(m => ({ photo: 'photo+grid', 'photo+grid': 'grid', grid: 'photo' }[m] ?? 'photo'))
-    }
-  }, [pixelizer.mode])
+    setEyeMode(m => ({
+      'photo':      'photo+grid',
+      'photo+grid': 'mosaic',
+      'mosaic':     'photo',
+    }[m] ?? 'photo'))
+  }, [])
 
   // ── addPhoto flow ──
   function handleAddPhoto() {
@@ -187,6 +210,11 @@ export default function PixelizerTab() {
       ? walls.filter(w => selectedWallIds.includes(w.id))
       : visibleWalls
 
+    // Снимок для «Отменить»: это НОВОЕ фото — отмена удалит его и вернёт прежнее.
+    const prev = {}
+    targets.forEach(w => { prev[w.id] = pixelizer.photoSettings[w.id] ?? null })
+    editSnapshotRef.current = { isNew: true, photoId, prev }
+
     for (const wall of targets) {
       setPhotoSettings(wall.id, {
         photoId,
@@ -201,29 +229,36 @@ export default function PixelizerTab() {
     }
     setActivePhotoId(photoId)
     setUiMode('transform')
+    setEyeMode('photo')   // чтобы фото было видно (а не мозаика)
   }
 
   // ── Transform ──
   function handleTransformDone() {
+    editSnapshotRef.current = null
     setActivePhotoId(null)
     setUiMode('navigate')
   }
 
-  function handleTransformDelete() {
-    const photoId = activePhotoId
-    if (photoId) {
-      walls.forEach(w => {
-        if (pixelizer.photoSettings[w.id]?.photoId === photoId) {
-          setPhotoSettings(w.id, null)
-        }
+  // «Отменить» — выйти без сохранения изменений (вернуть снимок настроек).
+  function handleTransformCancel() {
+    const snap = editSnapshotRef.current
+    if (snap) {
+      Object.entries(snap.prev).forEach(([wallId, prevSettings]) => {
+        setPhotoSettings(wallId, prevSettings)  // null вернёт стену к «без фото»
       })
-      deletePhoto(photoId)
-      setPhotoCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
-      setThumbCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
+      // Новое неподтверждённое фото — удаляем его файл, если больше не используется.
+      if (snap.isNew) {
+        deletePhoto(snap.photoId)
+        setPhotoCache(prev => { const n = new Map(prev); n.delete(snap.photoId); return n })
+        setThumbCache(prev => { const n = new Map(prev); n.delete(snap.photoId); return n })
+      }
     }
+    editSnapshotRef.current = null
     setActivePhotoId(null)
     setUiMode('navigate')
   }
+
+  // (Удаление фото доступно из карточки в навигации; в режиме редактирования — «Отменить».)
 
   const handlePhotoGestureMove = useCallback((dx_mm, dy_mm) => {
     const activeWalls = walls.filter(w => pixelizer.photoSettings[w.id]?.photoId === activePhotoId)
@@ -240,32 +275,52 @@ export default function PixelizerTab() {
 
   const handlePhotoGestureScale = useCallback((newScale) => {
     const activeWalls = walls.filter(w => pixelizer.photoSettings[w.id]?.photoId === activePhotoId)
+    if (!activeWalls.length) return
+    // Масштабируем вокруг центра фото: компенсируем offset, иначе фото «уезжает» в угол.
+    const groupTotalWidth_mm = activeWalls.reduce((sum, w) => sum + (parseFloat(w.length) || 0) * 10, 0)
+    const photo = photoCache.get(activePhotoId)
+    const aspect = photo ? photo.height / photo.width : 0.75
     activeWalls.forEach(w => {
       const ps = pixelizer.photoSettings[w.id]
       if (!ps) return
-      setPhotoSettings(w.id, { ...ps, scale: newScale })
+      const oldScale = ps.scale ?? 1
+      const dW = groupTotalWidth_mm * (oldScale - newScale)            // изменение ширины фото (мм)
+      const dH = groupTotalWidth_mm * aspect * (oldScale - newScale)   // изменение высоты фото (мм)
+      setPhotoSettings(w.id, {
+        ...ps,
+        scale: newScale,
+        offsetX_mm: (ps.offsetX_mm ?? 0) + dW / 2,
+        offsetY_mm: (ps.offsetY_mm ?? 0) + dH / 2,
+      })
     })
-  }, [walls, pixelizer.photoSettings, activePhotoId, setPhotoSettings])
+  }, [walls, pixelizer.photoSettings, activePhotoId, setPhotoSettings, photoCache])
 
   const handleDeletePhoto = useCallback(async (photoId) => {
-    walls.forEach(w => {
-      if (pixelizer.photoSettings[w.id]?.photoId === photoId) {
-        setPhotoSettings(w.id, null)
-      }
-    })
+    const stillUsed = removePhotoRestore(photoId)
     if (activePhotoId === photoId) {
       setActivePhotoId(null)
       setUiMode('navigate')
     }
-    await deletePhoto(photoId)
-    setPhotoCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
-    setThumbCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
-  }, [walls, pixelizer.photoSettings, activePhotoId, setPhotoSettings])
+    if (!stillUsed) {
+      await deletePhoto(photoId)
+      setPhotoCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
+      setThumbCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
+    }
+  }, [activePhotoId, removePhotoRestore])
 
   // Редактирование существующего фото
   function handleEditPhoto(photoId) {
+    // Снимок текущих настроек стен этого фото — для «Отменить».
+    const prev = {}
+    walls.forEach(w => {
+      if (pixelizer.photoSettings[w.id]?.photoId === photoId) {
+        prev[w.id] = pixelizer.photoSettings[w.id]
+      }
+    })
+    editSnapshotRef.current = { isNew: false, photoId, prev }
     setActivePhotoId(photoId)
     setUiMode('transform')
+    setEyeMode('photo')   // Фото-1: показываем фото при редактировании
   }
 
   // ── Пикселизация ──
@@ -325,15 +380,26 @@ export default function PixelizerTab() {
     })
   }
 
-  // ── Render params (что рисует canvas) ──
-  const renderParams = useMemo(() => {
-    const isMosaic = pixelizer.mode === 'mosaic' && eyeMode === 'mosaic'
-    return {
-      useMosaic:   isMosaic,
-      hidePhoto:   !isMosaic && eyeMode === 'grid',
-      gridVisible: eyeMode === 'photo+grid' || eyeMode === 'grid',
-    }
-  }, [pixelizer.mode, eyeMode])
+  // ── Render params (что рисует canvas) ── eyeMode напрямую управляет показом
+  const renderParams = useMemo(() => ({
+    useMosaic:   eyeMode === 'mosaic',
+    hidePhoto:   false,
+    gridVisible: eyeMode === 'photo+grid',
+  }), [eyeMode])
+
+  // ── Квантизация для отображения мозаики ──
+  const rawPalette = useMemo(
+    () => buildPalette(walls, pixelizer.tileColors),
+    [walls, pixelizer.tileColors]
+  )
+  const quantMap = useMemo(
+    () => buildQuantizeMap(rawPalette, pixelizer.quantize),
+    [rawPalette, pixelizer.quantize]
+  )
+  const displayPixelizer = useMemo(() => {
+    if (!quantMap) return pixelizer
+    return { ...pixelizer, tileColors: quantizeTileColors(pixelizer.tileColors, quantMap) }
+  }, [pixelizer, quantMap])
 
   // ── Пустой экран — нет стен ──
   const activeWalls = walls.filter(w => w.wall_active)
@@ -347,7 +413,7 @@ export default function PixelizerTab() {
       <div ref={panoramaRef} style={s.panorama}>
         <PhotoPanorama
           walls={visibleWalls}
-          pixelizer={pixelizer}
+          pixelizer={displayPixelizer}
           tile={tile}
           corners={corners}
           canvasScale={canvasScale}
@@ -361,6 +427,7 @@ export default function PixelizerTab() {
           onWallTap={handleWallTap}
           onPhotoGestureMove={handlePhotoGestureMove}
           onPhotoGestureScale={handlePhotoGestureScale}
+          onShowWalls={uiMode === 'navigate' ? () => setShowWalls(true) : null}
         />
       </div>
 
@@ -374,8 +441,6 @@ export default function PixelizerTab() {
             hasPhotos={hasPhotos}
             photoGroups={photoGroups}
             thumbCache={thumbCache}
-            eyeMode={eyeMode}
-            onEyeMode={setEyeMode}
             onAddPhoto={handleAddPhoto}
             onOpacityChange={handleOpacity}
             onEditPhoto={handleEditPhoto}
@@ -395,12 +460,12 @@ export default function PixelizerTab() {
             hasPhotos={hasPhotos}
             anyStale={anyStale}
             sampling={sampling}
-            onAddPhoto={handleAddPhoto}
-            onShowWalls={() => setShowWalls(true)}
             onPixelize={handlePixelize}
             onDone={handleTransformDone}
-            onDelete={handleTransformDelete}
+            onCancel={handleTransformCancel}
             onToast={showToast}
+            onQuantize={() => setQuantOpen(true)}
+            quantizeActive={pixelizer.quantize != null}
           />
         )}
 
@@ -420,6 +485,31 @@ export default function PixelizerTab() {
       {/* Шит стен */}
       {showWalls && <WallsSheet onClose={() => setShowWalls(false)} />}
 
+      {/* Модалка квантизации */}
+      <Modal open={quantOpen} onClose={() => setQuantOpen(false)} title="Квантизация цветов">
+        <p style={s.quantHint}>
+          Снижает число оттенков, объединяя близкие цвета. Виден результат сразу на мозаике.
+        </p>
+        <div style={s.quantList}>
+          {QUANT_OPTIONS.map((opt) => {
+            const active = (pixelizer.quantize ?? null) === opt.count
+            const label = opt.count === null
+              ? `Без квантизации (${rawPalette.length})`
+              : opt.label
+            return (
+              <button
+                key={opt.id}
+                style={{ ...s.quantOpt, ...(active ? s.quantOptActive : {}) }}
+                onClick={() => { setQuantize(opt.count); setEyeMode('mosaic') }}
+              >
+                {label}
+                {active && <span style={s.quantCheck}>✓</span>}
+              </button>
+            )
+          })}
+        </div>
+      </Modal>
+
       {/* Toast */}
       <Toast message={toastMsg} />
     </div>
@@ -427,17 +517,15 @@ export default function PixelizerTab() {
 }
 
 function EmptyNoWalls() {
-  const { setActiveTab } = useProjectStore()
+  const setActiveTab = useProjectStore((s) => s.setActiveTab)
   return (
-    <div style={{ position: 'relative', flex: 1 }}>
-      <EmptyState
-        icon={<Camera size={32} color="#818cf8" style={{ opacity: 0.5 }} />}
-        title="Сначала добавь стены"
-        subtitle="Фото накладывается только когда есть стена с размерами"
-        actionLabel="→ Перейти в Комнату"
-        onAction={() => setActiveTab('room')}
-      />
-    </div>
+    <EmptyState
+      icon={LayoutGrid}
+      title="Сначала добавьте стены"
+      description="Добавьте стены в разделе «Комната» — потом сможете накладывать фото."
+      actionLabel="Перейти в Комнату"
+      onAction={() => setActiveTab('room')}
+    />
   )
 }
 
@@ -449,9 +537,9 @@ const s = {
     overflow: 'hidden',
   },
   panorama: {
-    height: '40vh',
-    minHeight: 160,
-    maxHeight: 280,
+    height: '42vh',
+    minHeight: 200,
+    maxHeight: '46vh',
     flexShrink: 0,
   },
   bottom: {
@@ -460,4 +548,35 @@ const s = {
     overflow: 'hidden',
     position: 'relative',
   },
+  quantHint: {
+    fontSize: 13,
+    color: 'var(--text-hint)',
+    margin: '0 0 14px',
+    lineHeight: 1.5,
+  },
+  quantList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  quantOpt: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 48,
+    padding: '0 16px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    color: 'var(--text-secondary)',
+    fontSize: 15,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  quantOptActive: {
+    background: 'var(--accent-soft)',
+    border: '1px solid var(--accent-soft-border)',
+    color: 'var(--accent-light)',
+  },
+  quantCheck: { fontSize: 16, fontWeight: 700 },
 }

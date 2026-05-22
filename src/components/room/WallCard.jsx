@@ -1,5 +1,6 @@
 // src/components/room/WallCard.jsx
 import { useState, useEffect, useRef } from 'react'
+import { Trash2 } from 'lucide-react'
 import { useProjectStore } from '../../store/projectStore.js'
 import MaskCard from './MaskCard.jsx'
 import TileForm from './TileForm.jsx'
@@ -57,36 +58,41 @@ export default function WallCard({ wall, result }) {
             <button style={s.confirmNo} onClick={() => setDeleteConfirm(false)}>Нет</button>
           </div>
         ) : (
-          <button style={s.delBtn} onClick={() => setDeleteConfirm(true)} aria-label="Удалить стену">✕</button>
+          <button style={s.delBtn} onClick={() => setDeleteConfirm(true)} aria-label="Удалить стену">
+            <Trash2 size={18} />
+          </button>
         )}
       </div>
 
       {/* Размеры */}
-      <div style={s.sizeRow}>
-        <div style={s.field}>
-          <label style={s.fieldLabel}>Длина</label>
-          <div style={s.inputWrap}>
-            <input style={s.input} type="number" min="0" step="any" placeholder="—" value={wall.length}
-              onChange={(e) => updateWall(wall.id, 'length', e.target.value)}
-              onBlur={() => setTouched(t => ({ ...t, length: true }))} />
-            <span style={s.unit}>см</span>
+      <div style={s.sizeBlock}>
+        {[
+          { key: 'length', label: 'Длина' },
+          { key: 'height', label: 'Высота' },
+        ].map(({ key, label }) => (
+          <div key={key} style={s.fieldWrap}>
+            <div style={s.fieldRow}>
+              <label style={s.fieldLabel}>{label}</label>
+              <span style={s.guide} aria-hidden="true" />
+              <div style={s.inputWrap}>
+                <input
+                  style={s.input}
+                  type="number"
+                  min="0"
+                  step="any"
+                  placeholder="—"
+                  value={wall[key]}
+                  onChange={(e) => updateWall(wall.id, key, e.target.value)}
+                  onBlur={() => setTouched(t => ({ ...t, [key]: true }))}
+                />
+                <span style={s.unit}>см</span>
+              </div>
+            </div>
+            {touched[key] && !(Number(wall[key]) > 0) && (
+              <span style={s.fieldError}>Больше 0</span>
+            )}
           </div>
-          {touched.length && !(Number(wall.length) > 0) && (
-            <span style={s.fieldError}>Больше 0</span>
-          )}
-        </div>
-        <div style={s.field}>
-          <label style={s.fieldLabel}>Высота</label>
-          <div style={s.inputWrap}>
-            <input style={s.input} type="number" min="0" step="any" placeholder="—" value={wall.height}
-              onChange={(e) => updateWall(wall.id, 'height', e.target.value)}
-              onBlur={() => setTouched(t => ({ ...t, height: true }))} />
-            <span style={s.unit}>см</span>
-          </div>
-          {touched.height && !(Number(wall.height) > 0) && (
-            <span style={s.fieldError}>Больше 0</span>
-          )}
-        </div>
+        ))}
       </div>
 
       {/* Лимиты */}
@@ -142,17 +148,19 @@ const s = {
   nameInput:         { flex: 1, minWidth: 80, background: 'transparent', border: 'none', borderBottom: '1px solid rgba(139,92,246,0.5)', color: '#f1f5f9', fontSize: 14, fontWeight: 600, padding: '2px 4px', outline: 'none' },
   toggle:            { display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' },
   toggleLabel:       { fontSize: 12, color: '#64748b' },
-  delBtn:            { marginLeft: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 44, height: 44, background: 'transparent', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50%', color: '#475569', fontSize: 14, cursor: 'pointer', flexShrink: 0 },
+  delBtn:            { marginLeft: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40, background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: 10, color: '#f87171', cursor: 'pointer', flexShrink: 0 },
   deleteConfirm:     { marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 },
   deleteConfirmText: { fontSize: 12, color: '#94a3b8' },
   confirmYes:        { height: 32, padding: '0 12px', background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 8, color: '#f87171', fontSize: 12, fontWeight: 600, cursor: 'pointer' },
   confirmNo:         { height: 32, padding: '0 12px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 8, color: '#64748b', fontSize: 12, cursor: 'pointer' },
-  sizeRow:           { display: 'flex', gap: 16, padding: '12px 14px 4px' },
-  field:             { display: 'flex', alignItems: 'center', gap: 6 },
-  fieldLabel:        { fontSize: 13, fontWeight: 500, color: '#64748b' },
-  inputWrap:         { display: 'flex', alignItems: 'center', gap: 4 },
-  input:             { width: 76, height: 44, padding: '0 8px', background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, color: '#f1f5f9', fontSize: 13, boxSizing: 'border-box' },
-  unit:              { fontSize: 12, color: '#475569' },
+  sizeBlock:         { padding: '12px 14px 4px', display: 'flex', flexDirection: 'column', gap: 10 },
+  fieldWrap:         { },
+  fieldRow:          { display: 'flex', alignItems: 'center', gap: 6 },
+  fieldLabel:        { fontSize: 13, fontWeight: 500, color: 'var(--text-hint)', whiteSpace: 'nowrap', flexShrink: 0 },
+  guide:             { flex: 1, height: 1, borderTop: '1px dotted rgba(255,255,255,0.10)', minWidth: 8 },
+  inputWrap:         { display: 'flex', alignItems: 'center', gap: 4, width: 108, justifyContent: 'flex-end', flexShrink: 0 },
+  input:             { width: 84, height: 44, padding: '0 10px', background: 'rgba(0,0,0,0.35)', border: '1px solid var(--border-strong)', borderRadius: 10, color: 'var(--text-primary)', fontSize: 13, boxSizing: 'border-box', outline: 'none' },
+  unit:              { fontSize: 12, color: 'var(--text-disabled)', width: 22 },
   warning:           { margin: '8px 14px 0', padding: '8px 12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', color: '#f59e0b', borderRadius: 8, fontSize: 12 },
   blocked:           { margin: '8px 14px 0', padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', borderRadius: 8, fontSize: 12 },
   overrideWrap:      { padding: '10px 14px 0' },

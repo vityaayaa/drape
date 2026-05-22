@@ -24,17 +24,18 @@ describe('computeWallPositions', () => {
     expect(computeWallPositions(walls, {}).positions).toHaveLength(0)
   })
 
-  it('single wall: center at half-length, rotationY = 0', () => {
+  it('single wall: внутренняя грань на центральной линии, смещение наружу T/2', () => {
     const walls = [{ id: 'w1', wall_active: true, length: '300', height: '250' }]
-    const { positions, center } = computeWallPositions(walls, {})
+    const { positions } = computeWallPositions(walls, {})
     expect(positions).toHaveLength(1)
-    expect(rp(positions[0].position)).toEqual([150, 125, 0])
+    // центральная линия (150,0); смещение наружу +z на 5
+    expect(rp(positions[0].position)).toEqual([150, 125, 5])
     expect(round(positions[0].rotationY)).toBe(0)
     expect(positions[0].wallId).toBe('w1')
-    expect(rp(center)).toEqual([150, 125, 0])
+    expect(positions[0].renderLength).toBe(300)  // полная длина
   })
 
-  it('two walls at 90°: second wall runs along -Z', () => {
+  it('two walls at 90°: вторая стена вдоль +Z, смещение наружу', () => {
     const walls = [
       { id: 'w1', wall_active: true, length: '300', height: '250' },
       { id: 'w2', wall_active: true, length: '200', height: '250' },
@@ -42,26 +43,25 @@ describe('computeWallPositions', () => {
     const corners = { 'w1-w2': { overlap: 'auto', angle: 90 } }
     const { positions } = computeWallPositions(walls, corners)
     expect(positions).toHaveLength(2)
-    expect(rp(positions[0].position)).toEqual([150, 125, 0])
+    // CCW: линии w1 (150,0), w2 (300,100); центр (225,50)
+    // w1: наружу -z → (150,125,-5); w2: наружу +x → (305,125,100)
+    expect(rp(positions[0].position)).toEqual([150, 125, -5])
     expect(round(positions[0].rotationY)).toBe(0)
-    // wall2: dir=-90°, trimmed (i=1), startTrim=10, endTrim=0, renderL=190
-    // startZ = sin(-π/2)*10 = -10, cz = -10 + sin(-π/2)*95 = -105
-    expect(rp(positions[1].position)).toEqual([300, 125, -105])
-    expect(round(positions[1].rotationY)).toBe(round(-Math.PI / 2))
+    expect(rp(positions[1].position)).toEqual([305, 125, 100])
+    expect(round(positions[1].rotationY)).toBe(round(Math.PI / 2))
+    expect(positions[1].renderLength).toBe(200)
   })
 
-  it('two walls at 120°: second wall turns less sharply', () => {
+  it('two walls at 120°: вторая стена поворачивает мягче', () => {
     const walls = [
       { id: 'w1', wall_active: true, length: '300', height: '250' },
       { id: 'w2', wall_active: true, length: '200', height: '250' },
     ]
     const corners = { 'w1-w2': { overlap: 'auto', angle: 120 } }
     const { positions } = computeWallPositions(walls, corners)
-    // wall2: dir=-60°, trimmed (i=1), startTrim=10, endTrim=0, renderL=190
-    // startX = 300 + cos(-π/3)*10 = 305, startZ = sin(-π/3)*10 ≈ -8.660
-    // cx = 305 + cos(-π/3)*95 = 352.5, cz = -8.660 + sin(-π/3)*95 ≈ -90.874
-    expect(round(positions[1].position[0])).toBe(352.5)
-    expect(round(positions[1].position[2])).toBe(round(-Math.sqrt(3) / 2 * 105))
+    // CCW: w2 линия cx=350, cz=86.603; наружу n=(0.866,-0.5)*5 → (354.33, 84.103)
+    expect(round(positions[1].position[0])).toBe(354.33)
+    expect(round(positions[1].position[2])).toBe(84.103)
   })
 
   it('falls back to 90° when corner is old string format', () => {
@@ -71,7 +71,7 @@ describe('computeWallPositions', () => {
     ]
     const corners = { 'w1-w2': 'auto' }
     const { positions } = computeWallPositions(walls, corners)
-    expect(rp(positions[1].position)).toEqual([300, 125, -105])
+    expect(rp(positions[1].position)).toEqual([305, 125, 100])
   })
 
   it('falls back to 90° when corner key is missing', () => {
@@ -80,7 +80,7 @@ describe('computeWallPositions', () => {
       { id: 'w2', wall_active: true, length: '200', height: '250' },
     ]
     const { positions } = computeWallPositions(walls, {})
-    expect(rp(positions[1].position)).toEqual([300, 125, -105])
+    expect(rp(positions[1].position)).toEqual([305, 125, 100])
   })
 
   it('center is average of all wall centers', () => {
@@ -90,7 +90,7 @@ describe('computeWallPositions', () => {
     ]
     const corners = { 'w1-w2': { overlap: 'auto', angle: 90 } }
     const { center } = computeWallPositions(walls, corners)
-    // wall1 center: (150,125,0), wall2 center: (300,125,-105) → avg: (225,125,-52.5)
-    expect(rp(center)).toEqual([225, 125, -52.5])
+    // w1 (150,125,-5), w2 (305,125,100) → avg (227.5,125,47.5)
+    expect(rp(center)).toEqual([227.5, 125, 47.5])
   })
 })

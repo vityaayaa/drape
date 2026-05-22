@@ -1,10 +1,6 @@
 // src/components/layout/LayoutTab.jsx
-//
-// Вкладка «Укладка»: пошаговый помощник для укладчика плитки.
-// Собирает всё вместе: WallPreview, TileCard, Nav, ModeSwitch, DoneScreen.
-
 import { useEffect, useRef, useCallback, useMemo } from 'react'
-import { Layers } from 'lucide-react'
+import { LayoutGrid } from 'lucide-react'
 import { useProjectStore } from '../../store/projectStore.js'
 import { useLayoutStore }  from '../../store/layoutStore.js'
 import LayoutWallPreview   from './LayoutWallPreview.jsx'
@@ -12,9 +8,9 @@ import LayoutTileCard      from './LayoutTileCard.jsx'
 import LayoutNav           from './LayoutNav.jsx'
 import LayoutModeSwitch    from './LayoutModeSwitch.jsx'
 import LayoutDoneScreen    from './LayoutDoneScreen.jsx'
+import EmptyState          from '../ui/EmptyState.jsx'
 import { buildPalette }    from '../../utils/buildPalette.js'
-
-// ── Wake Lock ─────────────────────────────────────────────────────────────────
+import { buildQuantizeMap, quantizeTileColors, applyQuantization } from '../../utils/quantizeColors.js'
 
 function useWakeLock(enabled) {
   const lockRef = useRef(null)
@@ -26,9 +22,7 @@ function useWakeLock(enabled) {
     async function acquire() {
       try {
         lockRef.current = await navigator.wakeLock.request('screen')
-      } catch {
-        // Safari и некоторые браузеры не поддерживают Wake Lock
-      }
+      } catch { /* Safari может не поддерживать */ }
     }
 
     acquire()
@@ -47,103 +41,73 @@ function useWakeLock(enabled) {
   }, [enabled])
 }
 
-// ── Пустые состояния ──────────────────────────────────────────────────────────
-
-function EmptyState({ icon, title, hint }) {
-  return (
-    <div style={s.emptyWrap}>
-      <div style={s.emptyIcon}>{icon}</div>
-      <p style={s.emptyTitle}>{title}</p>
-      <p style={s.emptyHint}>{hint}</p>
-    </div>
-  )
-}
-
-// ── Основной компонент ────────────────────────────────────────────────────────
-
 export default function LayoutTab() {
   const tile       = useProjectStore((st) => st.tile)
   const walls      = useProjectStore((st) => st.walls)
   const tileColors = useProjectStore((st) => st.pixelizer.tileColors)
+  const quantize   = useProjectStore((st) => st.pixelizer.quantize)
   const setTab     = useProjectStore((st) => st.setActiveTab)
 
   const {
-    mode,
-    currentIndex,
-    sequence,
-    setMode,
-    goNext,
-    goPrev,
-    goTo,
-    markCompleted,
-    isCompleted,
-    resetProgress,
-    rebuildSequence,
-    currentTile,
-    findAndGoTo,
+    mode, currentIndex, sequence,
+    setMode, goNext, goPrev, goTo,
+    markCompleted, isCompleted, resetProgress,
+    rebuildSequence, currentTile, findAndGoTo,
     completedSet,
-    stats,
   } = useLayoutStore()
 
+  // Квантизация — чтобы цвета укладки совпадали с Фото/Схемой.
+  const rawPalette = useMemo(() => buildPalette(walls, tileColors), [walls, tileColors])
+  const quantMap = useMemo(() => buildQuantizeMap(rawPalette, quantize), [rawPalette, quantize])
+  const dispTileColors = useMemo(
+    () => quantizeTileColors(tileColors, quantMap),
+    [tileColors, quantMap]
+  )
   const palette = useMemo(
-    () => buildPalette(walls, tileColors),
-    [walls, tileColors]
+    () => (quantMap ? applyQuantization(rawPalette, quantMap) : rawPalette),
+    [rawPalette, quantMap]
   )
 
-  // Перестройка последовательности при изменении данных проекта или режима
   useEffect(() => {
-    rebuildSequence(walls, tile, tileColors, palette)
-  }, [walls, tile, tileColors, rebuildSequence, palette, mode])
+    rebuildSequence(walls, tile, dispTileColors, palette)
+  }, [walls, tile, dispTileColors, rebuildSequence, palette, mode])
 
-  // Wake Lock пока вкладка открыта
   useWakeLock(true)
 
-  // Производные значения
-  const activeTile   = currentTile()
-  const totalCount   = sequence.length
-  const isDone       = currentIndex >= totalCount && totalCount > 0
-  const completedSt  = completedSet()
-  const seqStats     = stats()
+  const activeTile  = currentTile()
+  const totalCount  = sequence.length
+  const isDone      = currentIndex >= totalCount && totalCount > 0
+  const completedSt = completedSet()
 
-  // Стена текущей плитки
   const currentWall = activeTile
     ? walls.find((w) => w.id === activeTile.wallId) ?? null
     : null
 
-  // Есть ли пикселизация хоть на одной стене последовательности
   const noPalette = totalCount > 0 && Object.keys(tileColors).length === 0
+  const progress = totalCount > 0 ? Math.round((currentIndex / totalCount) * 100) : 0
 
-  // Переключение режима — сброс на начало
-  const handleModeChange = useCallback((newMode) => {
-    setMode(newMode)
-  }, [setMode])
-
-  // Клик по плитке на превью → переход к ней
+  const handleModeChange = useCallback((newMode) => setMode(newMode), [setMode])
   const handleTileClick = useCallback((col, canvasRow) => {
     if (!currentWall) return
     findAndGoTo(currentWall.id, col, canvasRow)
   }, [currentWall, findAndGoTo])
+  const handleGoToSchema = useCallback(() => setTab('export'), [setTab])
 
-  // «В схему» со страницы Done
-  const handleGoToSchema = useCallback(() => {
-    setTab('schema')
-  }, [setTab])
-
-  // ── Нет активных стен ─────────────────────────────────────────────────────
+  // ── Нет активных стен ────────────────────────────────────
   const activeWalls = walls.filter((w) => w.mosaic_active && w.wall_active)
   if (activeWalls.length === 0) {
     return (
-      <div style={s.page}>
-        <EmptyState
-          icon={<Layers size={48} color="#334155" />}
-          title="Нет активных стен"
-          hint="Добавьте стены в разделе «Комната» и включите для них режим укладки"
-        />
-      </div>
+      <EmptyState
+        icon={LayoutGrid}
+        title="Добавьте стены"
+        description="Добавьте стены в разделе «Комната» и включите для них режим укладки."
+        actionLabel="Перейти в Комнату"
+        onAction={() => setTab('room')}
+      />
     )
   }
 
-  // ── Экран завершения ──────────────────────────────────────────────────────
+  // ── Экран завершения ─────────────────────────────────────
   if (isDone) {
     const completed = completedSt.size
     return (
@@ -157,33 +121,36 @@ export default function LayoutTab() {
     )
   }
 
-  // ── Основной экран ────────────────────────────────────────────────────────
   return (
     <div style={s.page}>
       {/* Тулбар */}
       <div style={s.toolbar}>
         <LayoutModeSwitch mode={mode} onModeChange={handleModeChange} />
-        <span style={s.counter}>
-          {totalCount > 0 ? `${currentIndex + 1} / ${totalCount}` : '—'}
-        </span>
+        <div style={s.counterBlock}>
+          <span style={s.counterMain}>
+            {totalCount > 0 ? `${currentIndex + 1}` : '—'}
+            <span style={s.counterDim}> / {totalCount.toLocaleString()}</span>
+          </span>
+          <span style={s.counterPct}>{progress}%</span>
+        </div>
       </div>
 
       {/* Превью стены */}
       {currentWall && (
         <div style={s.previewWrap}>
+          <div style={s.wallLabel}>{currentWall.name}</div>
           <LayoutWallPreview
             wall={currentWall}
             globalTile={tile}
-            tileColors={tileColors}
+            tileColors={dispTileColors}
             currentTile={activeTile ? {
               wallId: activeTile.wallId,
               col:    activeTile.col,
-              row:    activeTile.row,   // canvasRow
+              row:    activeTile.row,
             } : null}
             completedSet={completedSt}
             onTileClick={handleTileClick}
           />
-          <div style={s.wallLabel}>{currentWall.name}</div>
         </div>
       )}
 
@@ -213,17 +180,16 @@ export default function LayoutTab() {
   )
 }
 
-// ── Стили ─────────────────────────────────────────────────────────────────────
-
 const s = {
   page: {
     display: 'flex',
     flexDirection: 'column',
     height: '100%',
-    background: '#08080f',
+    background: 'var(--bg)',
     overflowY: 'auto',
     gap: 12,
-    paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+    // Нижний отступ — чтобы последняя кнопка не уходила под нижнюю навигацию.
+    paddingBottom: 'calc(24px + env(safe-area-inset-bottom, 0px))',
   },
   toolbar: {
     display: 'flex',
@@ -231,13 +197,22 @@ const s = {
     justifyContent: 'space-between',
     padding: '12px 16px 0',
     flexShrink: 0,
+    gap: 12,
   },
-  counter: {
-    fontSize: 13,
-    color: '#475569',
+  counterBlock: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  counterMain: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
     fontVariantNumeric: 'tabular-nums',
-    fontWeight: 500,
   },
+  counterDim: { color: 'var(--text-disabled)', fontWeight: 500 },
+  counterPct: { fontSize: 10, color: 'var(--accent-light)', fontWeight: 600 },
   previewWrap: {
     flexShrink: 0,
     position: 'relative',
@@ -246,11 +221,18 @@ const s = {
     position: 'absolute',
     top: 8,
     left: 12,
+    padding: '4px 10px',
     fontSize: 11,
-    fontWeight: 600,
-    color: 'rgba(255,255,255,0.35)',
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+    background: 'rgba(8,8,15,0.75)',
+    backdropFilter: 'blur(8px)',
+    WebkitBackdropFilter: 'blur(8px)',
+    border: '1px solid var(--border)',
+    borderRadius: 8,
     textTransform: 'uppercase',
     letterSpacing: '0.06em',
+    zIndex: 5,
     pointerEvents: 'none',
   },
   cardWrap: {
@@ -260,31 +242,5 @@ const s = {
   navWrap: {
     flexShrink: 0,
     paddingBottom: 8,
-  },
-  // Empty state
-  emptyWrap: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    padding: '40px 32px',
-    textAlign: 'center',
-  },
-  emptyIcon: {
-    marginBottom: 4,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: 600,
-    color: '#475569',
-    margin: 0,
-  },
-  emptyHint: {
-    fontSize: 13,
-    color: '#334155',
-    margin: 0,
-    lineHeight: 1.5,
   },
 }

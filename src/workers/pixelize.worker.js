@@ -64,7 +64,7 @@ self.onmessage = async (e) => {
     const colors = {}
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < columns; col++) {
-        if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm)) continue
+        if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm, canvasH / canvasScale)) continue
         const rect = tileRect(col, row, tileW_mm, tileH_mm, groutW_mm, canvasScale)
         colors[`${col}_${row}`] = averageColor(pixels, rect.x, rect.y + startY_px, rect.w, rect.h, canvasW)
       }

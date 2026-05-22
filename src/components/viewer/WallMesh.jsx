@@ -3,11 +3,11 @@ import * as THREE from 'three'
 import MaskOverlay from './MaskOverlay.jsx'
 import { buildTileTexture } from '../../utils/buildTileTexture.js'
 
-export default function WallMesh({ wall, tile, tileColors, position, rotationY }) {
+export default function WallMesh({ wall, tile, tileColors, position, rotationY, interiorSide = 'positive', renderLength, cut }) {
   const canvas = useMemo(
-    () => buildTileTexture(wall, tile, tileColors),
+    () => buildTileTexture(wall, tile, tileColors, cut),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [wall.id, wall.length, wall.height, wall.tile_overrides, tile, tileColors],
+    [wall.id, wall.length, wall.height, wall.tile_overrides, tile, tileColors, cut?.leftCutMm, cut?.rightCutMm],
   )
 
   const texture = useMemo(() => {
@@ -24,32 +24,49 @@ export default function WallMesh({ wall, tile, tileColors, position, rotationY }
   const L = parseFloat(wall.length)
   const H = parseFloat(wall.height)
   if (!L || !H) return null
+  // Длина бокса — обрезанная (renderLength), чтобы стены сходились на углах вровень.
+  const boxL = renderLength ?? L
 
-  const THICKNESS = 10 // 100 мм = 10 см
-  const exterior = '#2d3748'
-  const interior = texture ? '#ffffff' : '#4a5568'
+  const THICKNESS = 10
+  const EXTERIOR = '#3b425a'   // приятный нейтральный exterior (не чёрный)
+  const FRAME    = '#4a5568'   // торцы стены
 
-  // mat-0 +X, mat-1 -X, mat-2 +Y, mat-3 -Y, mat-4 +Z, mat-5 -Z
-  // +Z грань смотрит внутрь когда rotationY ≈ 0 или π/2,
-  // наружу когда rotationY ≈ π или 3π/2 — используем DoubleSide для текстуры
+  // material-4 = +Z грань, material-5 = -Z грань. Текстуру кладём на интерьерную
+  // грань без зеркалирования — ориентация совпадает с развёрткой «Фото».
+  const interiorIsPositive = interiorSide === 'positive'
+  const interiorTexture = texture
 
   return (
     <mesh position={position} rotation={[0, rotationY, 0]}>
-      <boxGeometry args={[L, H, THICKNESS]} />
-      <meshStandardMaterial attach="material-0" color={exterior} />
-      <meshStandardMaterial attach="material-1" color={exterior} />
-      <meshStandardMaterial attach="material-2" color={exterior} />
-      <meshStandardMaterial attach="material-3" color={exterior} />
-      {/* интерьерная сторона — DoubleSide чтобы текстура была видна независимо от поворота */}
+      <boxGeometry args={[boxL, H, THICKNESS]} />
+      <meshStandardMaterial attach="material-0" color={FRAME} />
+      <meshStandardMaterial attach="material-1" color={FRAME} />
+      <meshStandardMaterial attach="material-2" color={FRAME} />
+      <meshStandardMaterial attach="material-3" color={FRAME} />
+      {/* +Z грань */}
       <meshStandardMaterial
         attach="material-4"
-        map={texture ?? undefined}
-        color={interior}
-        side={THREE.DoubleSide}
+        map={interiorIsPositive ? (interiorTexture ?? undefined) : undefined}
+        color={interiorIsPositive ? '#ffffff' : EXTERIOR}
+        roughness={0.85}
+        metalness={0.05}
       />
-      <meshStandardMaterial attach="material-5" color={exterior} />
+      {/* -Z грань */}
+      <meshStandardMaterial
+        attach="material-5"
+        map={!interiorIsPositive ? (interiorTexture ?? undefined) : undefined}
+        color={!interiorIsPositive ? '#ffffff' : EXTERIOR}
+        roughness={0.85}
+        metalness={0.05}
+      />
       {(wall.masks ?? []).map((mask) => (
-        <MaskOverlay key={mask.id} mask={mask} wallLength={L} wallHeight={H} />
+        <MaskOverlay
+          key={mask.id}
+          mask={mask}
+          wallLength={L}
+          wallHeight={H}
+          interiorSide={interiorSide}
+        />
       ))}
     </mesh>
   )

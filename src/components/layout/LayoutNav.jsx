@@ -3,7 +3,8 @@
 // Навигация режима укладки: кнопки Пред/След, swipe-жест, «К плитке…» (bottom sheet).
 
 import { useState, useCallback, useRef } from 'react'
-import { ChevronLeft, ChevronRight, Hash } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import Modal from '../ui/Modal.jsx'
 
 export default function LayoutNav({
   currentIndex,
@@ -87,40 +88,34 @@ export default function LayoutNav({
           onClick={() => setSheetOpen(true)}
           aria-label="Перейти к плитке по номеру"
         >
-          <Hash size={16} color="#64748b" />
+          <Search size={16} color="var(--text-secondary)" />
           <span style={s.goToLabel}>К плитке…</span>
         </button>
       </div>
 
-      {/* Bottom sheet «К плитке» */}
-      {sheetOpen && (
-        <div style={s.overlay} onClick={() => setSheetOpen(false)}>
-          <div style={s.sheet} onClick={(e) => e.stopPropagation()}>
-            <div style={s.handle} />
-            <p style={s.sheetTitle}>Перейти к плитке</p>
-            <p style={s.sheetHint}>Номер от 1 до {totalCount}</p>
-            <div style={s.sheetRow}>
-              <input
-                style={s.sheetInput}
-                type="text"
-                inputMode="numeric"
-                value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleGoTo()}
-                placeholder={String(currentIndex + 1)}
-                autoFocus
-              />
-              <button
-                style={s.sheetBtn}
-                onClick={handleGoTo}
-                aria-label="Перейти"
-              >
-                Перейти
-              </button>
-            </div>
-          </div>
+      {/* Модалка «К плитке» (по центру экрана) */}
+      <Modal open={sheetOpen} onClose={() => setSheetOpen(false)} title="Перейти к плитке">
+        <p style={s.sheetHint}>Номер от 1 до {totalCount}</p>
+        <div style={s.sheetRow}>
+          <input
+            style={s.sheetInput}
+            type="text"
+            inputMode="numeric"
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleGoTo()}
+            placeholder={String(currentIndex + 1)}
+            autoFocus
+          />
+          <button
+            style={s.sheetBtn}
+            onClick={handleGoTo}
+            aria-label="Перейти"
+          >
+            Перейти
+          </button>
         </div>
-      )}
+      </Modal>
     </>
   )
 }

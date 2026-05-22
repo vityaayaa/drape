@@ -148,7 +148,7 @@ export default function WallCanvas({
     const ps = settings ?? { offsetX_mm: 0, offsetY_mm: 0, scale: 1, opacity: 1 }
 
     if (useMosaic && tileGrid.columns > 0) {
-      drawWallMosaic(ctx, dims.width, dims.height, tileGrid, tileColors, canvasScale)
+      drawWallMosaic(ctx, dims.width, dims.height, tileGrid, tileColors, canvasScale, gridVisible)
     } else {
       drawWallPhoto(
         ctx, dims.width, dims.height,

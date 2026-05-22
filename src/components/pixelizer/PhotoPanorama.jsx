@@ -1,6 +1,7 @@
 // src/components/pixelizer/PhotoPanorama.jsx
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { TransformWrapper, TransformComponent } from 'react-zoom-pan-pinch'
+import { Layers, Maximize } from 'lucide-react'
 import WallCanvas from './WallCanvas.jsx'
 
 export default function PhotoPanorama({
@@ -8,6 +9,7 @@ export default function PhotoPanorama({
   uiMode, selectedWallIds, renderParams, activePhotoId,
   photoCache, eyeMode, onEyeCycle, onWallTap,
   onPhotoGestureMove, onPhotoGestureScale,
+  onShowWalls,
 }) {
   const [eyeAnimating, setEyeAnimating] = useState(false)
 
@@ -30,6 +32,11 @@ export default function PhotoPanorama({
   const initialScale = Math.min(1, (vpW - 32) / Math.max(totalW, 1))
 
   const [worldScale, setWorldScale] = useState(initialScale)
+  const transformRef = useRef(null)
+
+  function handleFitWorld() {
+    transformRef.current?.resetTransform()
+  }
 
   function handleEyeCycle() {
     setEyeAnimating(true)
@@ -37,22 +44,23 @@ export default function PhotoPanorama({
     onEyeCycle()
   }
 
-  const eyeIcon = eyeMode === 'grid'
-    ? <GridIcon />
-    : eyeMode === 'mosaic'
+  const eyeIcon = (eyeMode === 'mosaic' || eyeMode === 'mosaic+grid')
     ? <MosaicIcon />
+    : (eyeMode === 'grid' || eyeMode === 'photo+grid')
+    ? <GridIcon />
     : <EyeIcon />
 
   return (
     <div style={s.container}>
       <TransformWrapper
+        ref={transformRef}
         initialScale={initialScale}
         minScale={0.15}
         maxScale={8}
         limitToBounds={false}
         centerOnInit={true}
-        panning={{ disabled: isAddPhoto, velocityDisabled: false }}
-        pinch={{ disabled: isAddPhoto }}
+        panning={{ disabled: isAddPhoto, velocityDisabled: true }}
+        pinch={{ disabled: isAddPhoto, step: 5 }}
         wheel={{ step: 0.1 }}
         doubleClick={{ disabled: true }}
         onTransform={({ state }) => setWorldScale(state.scale)}
@@ -94,15 +102,38 @@ export default function PhotoPanorama({
         </TransformComponent>
       </TransformWrapper>
 
-      {/* Кнопка «глаз» */}
-      <button
-        style={s.eyeBtn}
-        className={eyeAnimating ? 'eye-pop' : ''}
-        onClick={handleEyeCycle}
-        title="Режим отображения"
-      >
-        {eyeIcon}
-      </button>
+      {/* Кнопки оверлея: стены (слева) + глаз (справа) */}
+      <div style={s.overlayBtns}>
+        {isTransform && (
+          <button
+            style={s.eyeBtn}
+            onClick={handleFitWorld}
+            title="Уместить на экране"
+            aria-label="Уместить на экране"
+          >
+            <Maximize size={18} />
+          </button>
+        )}
+        {onShowWalls && (
+          <button
+            style={s.eyeBtn}
+            onClick={onShowWalls}
+            title="Видимость стен"
+            aria-label="Видимость стен"
+          >
+            <Layers size={18} />
+          </button>
+        )}
+        <button
+          style={s.eyeBtn}
+          className={eyeAnimating ? 'eye-pop' : ''}
+          onClick={handleEyeCycle}
+          title="Режим отображения"
+          aria-label="Режим отображения"
+        >
+          {eyeIcon}
+        </button>
+      </div>
 
       {/* Метка текущего режима вида */}
       <EyeLabel eyeMode={eyeMode} />
@@ -111,16 +142,18 @@ export default function PhotoPanorama({
 }
 
 function WallDivider({ height }) {
+  // Линия выступает симметрично: на 40px выше верха стены и на 40px ниже (за пол).
+  const overhang = 40
   return (
     <div
       style={{
-        width: 1,
-        height: height + 24,
+        width: 2,
+        height: height + overhang * 2,
         alignSelf: 'flex-end',
         flexShrink: 0,
-        marginBottom: 20,
-        background: 'linear-gradient(to bottom, rgba(129,140,248,0) 0%, rgba(129,140,248,0.30) 12%, rgba(129,140,248,0.30) 88%, rgba(129,140,248,0.10) 100%)',
-        filter: 'drop-shadow(0 0 3px rgba(129,140,248,0.35))',
+        marginBottom: 20 - overhang,
+        background: 'linear-gradient(to bottom, rgba(167,139,250,0.15) 0%, rgba(167,139,250,0.75) 20%, rgba(167,139,250,0.75) 80%, rgba(167,139,250,0.15) 100%)',
+        filter: 'drop-shadow(0 0 4px rgba(167,139,250,0.6))',
       }}
     />
   )
@@ -128,10 +161,11 @@ function WallDivider({ height }) {
 
 function EyeLabel({ eyeMode }) {
   const labels = {
-    'photo':      'Фото',
-    'photo+grid': 'Фото + сетка',
-    'grid':       'Только сетка',
-    'mosaic':     'Мозаика',
+    'photo':       'Фото',
+    'photo+grid':  'Фото + сетка',
+    'grid':        'Только сетка',
+    'mosaic':      'Мозаика',
+    'mosaic+grid': 'Мозаика + сетка',
   }
   return (
     <div style={s.eyeLabel}>{labels[eyeMode] ?? ''}</div>
@@ -186,8 +220,10 @@ const s = {
     height: '100%',
   },
   transformContent: {
-    display: 'flex',
-    alignItems: 'flex-end',
+    // Контент берёт натуральный размер от worldSpace, чтобы TransformWrapper
+    // корректно центрировал и пинчил вокруг точки касания (а не вокруг угла).
+    width: 'fit-content',
+    height: 'fit-content',
   },
   worldSpace: {
     display: 'flex',
@@ -203,25 +239,49 @@ const s = {
     background: 'rgba(255,255,255,0.05)',
     pointerEvents: 'none',
   },
-  eyeBtn: {
+  overlayBtns: {
     position: 'absolute',
     top: 12, right: 12,
+    display: 'flex',
+    flexDirection: 'row',
+    gap: 8,
+    zIndex: 10,
+  },
+  gestureHint: {
+    position: 'absolute',
+    top: 60, right: 12,
+    padding: '6px 10px',
+    background: 'rgba(8,8,15,0.78)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    border: '1px solid var(--border)',
+    borderRadius: 8,
+    fontSize: 11,
+    color: 'var(--text-secondary)',
+    pointerEvents: 'none',
+    whiteSpace: 'nowrap',
+    zIndex: 10,
+  },
+  eyeBtn: {
     width: 40, height: 40,
     background: 'rgba(8,8,15,0.72)',
     backdropFilter: 'blur(16px)',
     WebkitBackdropFilter: 'blur(16px)',
-    border: '1px solid rgba(255,255,255,0.10)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 11,
-    color: '#94a3b8',
+    color: 'var(--text-secondary)',
     cursor: 'pointer',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    zIndex: 10,
   },
   eyeLabel: {
     position: 'absolute',
-    top: 22, right: 60,
+    top: 14, left: 14,
+    padding: '5px 10px',
+    background: 'rgba(8,8,15,0.7)',
+    borderRadius: 8,
     fontSize: 11,
-    color: 'rgba(255,255,255,0.35)',
+    fontWeight: 600,
+    color: 'var(--text-secondary)',
     pointerEvents: 'none',
     whiteSpace: 'nowrap',
     zIndex: 10,

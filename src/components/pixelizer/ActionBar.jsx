@@ -1,22 +1,22 @@
 // src/components/pixelizer/ActionBar.jsx
-import { useState } from 'react'
+import { RotateCw, ArrowRight, Check, X, Atom } from 'lucide-react'
 
 export default function ActionBar({
   uiMode, pixelizerMode, hasPhotos, anyStale, sampling,
-  onAddPhoto, onShowWalls, onPixelize, onDone, onDelete, onToast,
+  onPixelize, onDone, onCancel, onToast,
+  onQuantize, quantizeActive,
 }) {
-  const [deleteTap, setDeleteTap] = useState(false)
-
   if (uiMode === 'transform') {
     return (
       <div style={s.bar}>
-        <button
-          style={s.danger}
-          className={deleteTap ? 'anim-delete-flash' : ''}
-          onPointerDown={() => { setDeleteTap(true); setTimeout(() => setDeleteTap(false), 160) }}
-          onClick={onDelete}
-        >Удалить</button>
-        <button style={s.primary} onClick={onDone}>Готово ✓</button>
+        <button style={s.cancel} onClick={onCancel}>
+          <X size={18} />
+          <span>Отменить</span>
+        </button>
+        <button style={s.primary} onClick={onDone}>
+          <Check size={18} />
+          <span>Готово</span>
+        </button>
       </div>
     )
   }
@@ -32,24 +32,27 @@ export default function ActionBar({
     onPixelize()
   }
 
+  const Icon = sampling ? null : isStale ? RotateCw : ArrowRight
+  const label = sampling ? 'Обрабатываю…' : isStale ? 'Обновить' : 'Пикселизировать'
+
   return (
     <div style={s.bar}>
-      <button style={s.ghost} onClick={onAddPhoto}>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: 5 }}>
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        Фото
-      </button>
-      <button style={s.ghost} onClick={onShowWalls}>
-        Стены ▾
-      </button>
       <button
-        style={s.primary}
+        style={{ ...s.primary, opacity: hasPhotos ? 1 : 0.55 }}
         className={sampling ? 'btn-pixelize-loading' : (isStale ? 'btn-stale' : '')}
         onClick={handlePixelizeClick}
         disabled={sampling}
       >
-        {sampling ? 'Обрабатываю…' : (isStale ? '⟳ Обновить' : 'Пикселизировать →')}
+        {Icon && <Icon size={18} />}
+        <span>{label}</span>
+      </button>
+      <button
+        style={{ ...s.atomBtn, ...(quantizeActive ? s.atomBtnActive : {}) }}
+        onClick={onQuantize}
+        aria-label="Квантизация цветов"
+        title="Квантизация цветов"
+      >
+        <Atom size={20} />
       </button>
     </div>
   )
@@ -64,44 +67,58 @@ const s = {
     background: 'rgba(8,8,15,0.88)',
     backdropFilter: 'blur(24px) saturate(180%)',
     WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-    borderTop: '1px solid rgba(255,255,255,0.07)',
+    borderTop: '1px solid var(--border)',
     flexShrink: 0,
-  },
-  ghost: {
-    display: 'flex', alignItems: 'center',
-    padding: '0 14px',
-    height: 40,
-    background: 'rgba(255,255,255,0.06)',
-    border: '1px solid rgba(255,255,255,0.10)',
-    borderRadius: 10,
-    color: '#94a3b8',
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
   },
   primary: {
     flex: 1,
-    padding: '0 14px',
-    height: 40,
-    background: 'rgba(129,140,248,0.18)',
-    border: '1px solid rgba(129,140,248,0.40)',
-    borderRadius: 10,
-    color: '#818cf8',
-    fontSize: 13,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: '0 16px',
+    height: 48,
+    background: 'var(--accent-grad)',
+    border: 'none',
+    borderRadius: 12,
+    color: '#f1f5f9',
+    fontSize: 15,
+    fontWeight: 700,
+    cursor: 'pointer',
+    boxShadow: 'var(--accent-shadow)',
+    transition: 'all 0.15s',
+    letterSpacing: '-0.01em',
+  },
+  cancel: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    padding: '0 16px',
+    height: 48,
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid var(--border-strong)',
+    borderRadius: 12,
+    color: 'var(--text-secondary)',
+    fontSize: 14,
     fontWeight: 600,
+    cursor: 'pointer',
+  },
+  atomBtn: {
+    width: 48, height: 48,
+    flexShrink: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid var(--border-strong)',
+    borderRadius: 12,
+    color: 'var(--text-secondary)',
     cursor: 'pointer',
     transition: 'all 0.15s',
   },
-  danger: {
-    padding: '0 16px',
-    height: 40,
-    background: 'transparent',
-    border: '1px solid rgba(244,63,94,0.30)',
-    borderRadius: 10,
-    color: '#f43f5e',
-    fontSize: 13,
-    fontWeight: 500,
-    cursor: 'pointer',
+  atomBtnActive: {
+    background: 'var(--accent-soft)',
+    border: '1px solid var(--accent-soft-border)',
+    color: 'var(--accent-light)',
+    boxShadow: '0 0 12px rgba(124,58,237,0.25)',
   },
 }

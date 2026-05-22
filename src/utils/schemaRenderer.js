@@ -46,6 +46,8 @@ export function contrastColor(hex) {
 // Число колонок/рядов для стены
 function wallGrid(wall, tile) {
   const { tileW, tileH, groutW } = resolveWallTile(wall, tile)
+  // resolveWallTile возвращает tileW/H/grout в десятых мм (×10), поэтому стену тоже
+  // переводим в десятые мм (см × 100), чтобы соотношение колонок совпало с calculateGrid.
   const wallW_mm = parseFloat(wall.length)  * 100
   const wallH_mm = parseFloat(wall.height)  * 100
   if ([tileW, tileH, wallW_mm, wallH_mm].some((v) => isNaN(v) || v <= 0)) return null

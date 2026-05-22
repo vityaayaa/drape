@@ -13,8 +13,8 @@ function makeWall(overrides = {}) {
   return {
     id: overrides.id ?? 'w1',
     name: overrides.name ?? 'Стена 1',
-    length: overrides.length ?? '200',   // см
-    height: overrides.height ?? '250',   // см
+    length: overrides.length ?? '20',   // см
+    height: overrides.height ?? '25',   // см
     wall_active: true,
     mosaic_active: overrides.mosaic_active ?? true,
     tile_overrides: overrides.tile_overrides ?? {},
@@ -22,20 +22,20 @@ function makeWall(overrides = {}) {
   }
 }
 
-// tile_width/height хранится в мм. resolveWallTile умножает на 10 (→ 0.1мм единицы).
-// wallW_mm = parseFloat(wall.length) * 10 (см → 0.1мм единицы).
-// Стена 200см → wallW = 2000. Плитка 20мм → tileW = 200. cols = floor(2000/200) = 10.
-// Стена 250см → wallH = 2500. Плитка 25мм → tileH = 250. rows = floor(2500/250) = 10.
+// Единицы: wall.length/height в см (× 10 → мм), tile_width/height в мм.
+// layoutSequencer переводит resolveWallTile (×10) обратно в мм делением на 10.
+// Стена 20см → wallW = 200мм. Плитка 20мм → tileW = 20мм. cols = floor(200/20) = 10.
+// Стена 25см → wallH = 250мм. Плитка 25мм → tileH = 25мм. rows = floor(250/25) = 10.
 // totalTiles = 10×10 = 100
 
 const TILE = {
-  tile_width:  '20',   // мм → resolveWallTile даёт tileW=200
-  tile_height: '25',   // мм → tileH=250
+  tile_width:  '20',   // мм
+  tile_height: '25',   // мм
   grout_width: '0',
   grout_color: '#888888',
 }
 
-// Стена 200×250см, плитка 20×25мм, шов 0 → 10 cols × 10 rows = 100 плиток
+// Стена 20×25см, плитка 20×25мм, шов 0 → 10 cols × 10 rows = 100 плиток
 
 // ── buildTileSequence ─────────────────────────────────────────────────────────
 
@@ -119,11 +119,10 @@ describe('buildTileSequence — byRow', () => {
 
 describe('buildTileSequence — маски', () => {
   it('плитка полностью в маске пропускается', () => {
-    // isFullyInsideMask: mask.x/y/width/height в СМ, умножается на 10 внутри.
-    // tileW=200 (0.1мм единицы) → плитка в СМ = 200/10/10 = 2см (width_cm)
-    // Аналогично: tileH=250 → 25мм = 2.5см. Значит ровно 1 плитка = 20см × 25см
+    // isFullyInsideMask: mask.x/y/width/height в СМ, умножается на 10 → мм.
+    // Плитка 20×25мм = 2см × 2.5см. Маска ровно в 1 плитку: 2см × 2.5см.
     const wall = makeWall({
-      masks: [{ id: 'm1', name: 'маска', x: '0', y: '0', width: '20', height: '25', color: '#fff' }],
+      masks: [{ id: 'm1', name: 'маска', x: '0', y: '0', width: '2', height: '2.5', color: '#fff' }],
     })
     const seq = buildTileSequence([wall], TILE, {}, [], 'byRow')
     // должна пропасть 1 плитка из 100
@@ -131,9 +130,9 @@ describe('buildTileSequence — маски', () => {
   })
 
   it('плитка частично в маске НЕ пропускается', () => {
-    // Маска 1×1 см — меньше плитки 20×25см, ни одна не попадает целиком
+    // Маска 0.1×0.1 см — меньше плитки 2×2.5см, ни одна не попадает целиком
     const wall = makeWall({
-      masks: [{ id: 'm1', name: 'маска', x: '0', y: '0', width: '1', height: '1', color: '#fff' }],
+      masks: [{ id: 'm1', name: 'маска', x: '0', y: '0', width: '0.1', height: '0.1', color: '#fff' }],
     })
     const seq = buildTileSequence([wall], TILE, {}, [], 'byRow')
     expect(seq).toHaveLength(100) // ни одна не удалена
@@ -143,7 +142,7 @@ describe('buildTileSequence — маски', () => {
 describe('buildTileSequence — byColor', () => {
   it('byColor: все плитки цвета 1 перед плитками цвета 2', () => {
     // Стена 100×100 см, плитка 20×25мм → cols=5, rows=4, итого 20 плиток
-    const w1 = makeWall({ id: 'w1', name: 'Стена 1', length: '100', height: '100' })
+    const w1 = makeWall({ id: 'w1', name: 'Стена 1', length: '10', height: '10' })
     const tileColors = { w1: {} }
     // col 0-1 → '#ff0000', col 2-4 → '#0000ff'
     for (let col = 0; col < 5; col++) {
@@ -168,8 +167,8 @@ describe('buildTileSequence — byColor', () => {
 
   it('byColor: внутри одного цвета — сначала wallIndex=0, потом wallIndex=1', () => {
     // 20 плиток на каждую стену, все красные
-    const w1 = makeWall({ id: 'w1', name: 'Стена 1', length: '100', height: '100' })
-    const w2 = makeWall({ id: 'w2', name: 'Стена 2', length: '100', height: '100' })
+    const w1 = makeWall({ id: 'w1', name: 'Стена 1', length: '10', height: '10' })
+    const w2 = makeWall({ id: 'w2', name: 'Стена 2', length: '10', height: '10' })
     const tileColors = { w1: {}, w2: {} }
     for (let col = 0; col < 5; col++) {
       for (let row = 0; row < 4; row++) {
@@ -187,7 +186,7 @@ describe('buildTileSequence — byColor', () => {
 describe('buildTileSequence — colorHex', () => {
   it('colorHex берётся из tileColors если есть', () => {
     // Стена 100×100см: cols=5, rows=4
-    const wall = makeWall({ length: '100', height: '100' })
+    const wall = makeWall({ length: '10', height: '10' })
     const tileColors = { w1: { '0_0': '#aabbcc' } }
     // canvasRow=0 — верхний ряд. rowFromFloor = totalRows-1-0 = 3 (при 4 рядах)
     const palette = [{ index: 1, hex: '#aabbcc' }]
@@ -269,7 +268,7 @@ describe('sequenceStats', () => {
   it('byColor считает правильно', () => {
     // Стена 100×100см: cols=5, rows=4 → 20 плиток
     // col 0-1 → '#ff0000' (8 плиток), col 2-4 → '#0000ff' (12 плиток)
-    const wall = makeWall({ length: '100', height: '100' })
+    const wall = makeWall({ length: '10', height: '10' })
     const tileColors = { w1: {} }
     for (let col = 0; col < 5; col++) {
       for (let row = 0; row < 4; row++) {
