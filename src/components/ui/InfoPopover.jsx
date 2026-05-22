@@ -1,18 +1,13 @@
 // src/components/ui/InfoPopover.jsx
-// Кнопка-вопрос, открывающая модалку с подсказкой/гайдом.
-import { useState, useEffect } from 'react'
-import { HelpCircle, X } from 'lucide-react'
+// Кнопка-вопрос, открывающая центрированную модалку с подсказкой/гайдом
+// (тот же визуальный блок, что и «Как работать?»).
+import { useState } from 'react'
+import { HelpCircle } from 'lucide-react'
 import IconButton from './IconButton.jsx'
+import Modal from './Modal.jsx'
 
 export default function InfoPopover({ title, children, ariaLabel = 'Помощь' }) {
   const [open, setOpen] = useState(false)
-
-  useEffect(() => {
-    if (!open) return
-    const onKey = (e) => e.key === 'Escape' && setOpen(false)
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open])
 
   return (
     <>
@@ -23,62 +18,9 @@ export default function InfoPopover({ title, children, ariaLabel = 'Помощь
         ariaLabel={ariaLabel}
         onClick={() => setOpen(true)}
       />
-      {open && (
-        <div style={s.overlay} onClick={() => setOpen(false)}>
-          <div style={s.sheet} onClick={(e) => e.stopPropagation()}>
-            <div style={s.header}>
-              <h3 style={s.title}>{title}</h3>
-              <IconButton variant="ghost" size="sm" icon={X} onClick={() => setOpen(false)} ariaLabel="Закрыть" />
-            </div>
-            <div style={s.content}>{children}</div>
-          </div>
-        </div>
-      )}
+      <Modal open={open} onClose={() => setOpen(false)} title={title}>
+        {children}
+      </Modal>
     </>
   )
-}
-
-const s = {
-  overlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(0,0,0,0.6)',
-    backdropFilter: 'blur(4px)',
-    WebkitBackdropFilter: 'blur(4px)',
-    zIndex: 300,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-    animation: 'fadeIn 180ms var(--ease-out)',
-  },
-  sheet: {
-    width: '100%',
-    maxWidth: 440,
-    background: 'var(--surface-1)',
-    border: '1px solid var(--border-strong)',
-    borderRadius: 20,
-    padding: '18px 20px 20px',
-    boxShadow: 'var(--shadow-elev)',
-    animation: 'cardSlideDown 220ms var(--ease-out)',
-    maxHeight: '85vh',
-    overflowY: 'auto',
-  },
-  header: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: 700,
-    color: 'var(--text-primary)',
-    margin: 0,
-  },
-  content: {
-    color: 'var(--text-secondary)',
-    fontSize: 14,
-    lineHeight: 1.6,
-  },
 }

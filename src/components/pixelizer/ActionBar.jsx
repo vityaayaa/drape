@@ -1,25 +1,17 @@
 // src/components/pixelizer/ActionBar.jsx
-import { useState } from 'react'
-import { RotateCw, ArrowRight, Check, Trash2, Atom } from 'lucide-react'
+import { RotateCw, ArrowRight, Check, X, Atom } from 'lucide-react'
 
 export default function ActionBar({
   uiMode, pixelizerMode, hasPhotos, anyStale, sampling,
-  onPixelize, onDone, onDelete, onToast,
+  onPixelize, onDone, onCancel, onToast,
   onQuantize, quantizeActive,
 }) {
-  const [deleteTap, setDeleteTap] = useState(false)
-
   if (uiMode === 'transform') {
     return (
       <div style={s.bar}>
-        <button
-          style={s.danger}
-          className={deleteTap ? 'anim-delete-flash' : ''}
-          onPointerDown={() => { setDeleteTap(true); setTimeout(() => setDeleteTap(false), 160) }}
-          onClick={onDelete}
-        >
-          <Trash2 size={16} />
-          <span>Удалить</span>
+        <button style={s.cancel} onClick={onCancel}>
+          <X size={18} />
+          <span>Отменить</span>
         </button>
         <button style={s.primary} onClick={onDone}>
           <Check size={18} />
@@ -97,17 +89,17 @@ const s = {
     transition: 'all 0.15s',
     letterSpacing: '-0.01em',
   },
-  danger: {
+  cancel: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
     padding: '0 16px',
     height: 48,
-    background: 'rgba(239,68,68,0.10)',
-    border: '1px solid rgba(239,68,68,0.30)',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid var(--border-strong)',
     borderRadius: 12,
-    color: '#f87171',
+    color: 'var(--text-secondary)',
     fontSize: 14,
     fontWeight: 600,
     cursor: 'pointer',

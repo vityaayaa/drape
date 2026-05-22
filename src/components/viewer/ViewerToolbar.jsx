@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
-import { RotateCcw, Square, Layers, Box } from 'lucide-react'
+import { RotateCcw, Square, Layers } from 'lucide-react'
 
 const HINT_KEY = 'drape_3d_hint_shown'
 
 const VIEWS = [
-  { id: 'default', label: 'Обзор',   icon: Box },
-  { id: 'front',   label: 'Спереди', icon: Square },
-  { id: 'top',     label: 'Сверху',  icon: Layers },
+  { id: 'front', label: 'Спереди', icon: Square },
+  { id: 'top',   label: 'Сверху',  icon: Layers },
 ]
 
 export default function ViewerToolbar({ onReset, onSetView, activeView }) {
@@ -25,7 +24,8 @@ export default function ViewerToolbar({ onReset, onSetView, activeView }) {
     <>
       <div style={s.toolbar}>
         <button style={s.resetBtn} onClick={onReset} aria-label="Сбросить камеру" title="Сбросить камеру">
-          <RotateCcw size={18} />
+          <RotateCcw size={16} />
+          <span>Сброс</span>
         </button>
         <div style={s.viewBtns}>
           {VIEWS.map((view) => {
@@ -71,14 +71,15 @@ const s = {
     gap: 8,
   },
   resetBtn: {
-    width: 40, height: 40,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    height: 40,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5,
     background: 'rgba(255,255,255,0.04)',
     border: '1px solid var(--border)',
     borderRadius: 10,
     color: 'var(--text-secondary)',
+    fontSize: 12, fontWeight: 600,
     cursor: 'pointer',
-    padding: 0,
+    padding: '0 12px',
     flexShrink: 0,
   },
   viewBtns: {

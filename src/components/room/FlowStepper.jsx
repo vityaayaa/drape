@@ -73,6 +73,7 @@ export default function FlowStepper() {
           <span style={gs.num}>{cur.n}</span>
           <span style={gs.stepTitle}>{cur.t}</span>
         </div>
+        {/* Фикс. высота — чтобы «Назад/Далее» всегда были на одном месте */}
         <div style={gs.blocks}>
           {cur.blocks.map((b, i) => (
             <div key={i} style={gs.block}>
@@ -121,7 +122,8 @@ const s = {
   row: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+    gap: 10,
     padding: '12px 16px',
   },
   heading: {
@@ -158,7 +160,7 @@ const gs = {
     flexShrink: 0,
   },
   stepTitle: { fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' },
-  blocks: { display: 'flex', flexDirection: 'column', gap: 12 },
+  blocks: { display: 'flex', flexDirection: 'column', gap: 12, minHeight: 280 },
   block: {
     display: 'flex',
     gap: 10,

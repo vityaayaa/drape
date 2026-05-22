@@ -46,6 +46,9 @@ export default function PixelizerTab() {
     pixelizer.mode === 'mosaic' ? 'mosaic' : (pixelizer.gridVisible ? 'photo+grid' : 'photo')
   )
 
+  // Снимок настроек фото на время редактирования (для «Отменить»).
+  const editSnapshotRef = useRef(null)
+
   // ── UI feedback ──
   const [toastMsg, setToastMsg]   = useState(null)
   const [sampling, setSampling]   = useState(false)
@@ -207,6 +210,11 @@ export default function PixelizerTab() {
       ? walls.filter(w => selectedWallIds.includes(w.id))
       : visibleWalls
 
+    // Снимок для «Отменить»: это НОВОЕ фото — отмена удалит его и вернёт прежнее.
+    const prev = {}
+    targets.forEach(w => { prev[w.id] = pixelizer.photoSettings[w.id] ?? null })
+    editSnapshotRef.current = { isNew: true, photoId, prev }
+
     for (const wall of targets) {
       setPhotoSettings(wall.id, {
         photoId,
@@ -226,23 +234,31 @@ export default function PixelizerTab() {
 
   // ── Transform ──
   function handleTransformDone() {
+    editSnapshotRef.current = null
     setActivePhotoId(null)
     setUiMode('navigate')
   }
 
-  function handleTransformDelete() {
-    const photoId = activePhotoId
-    if (photoId) {
-      const stillUsed = removePhotoRestore(photoId)
-      if (!stillUsed) {
-        deletePhoto(photoId)
-        setPhotoCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
-        setThumbCache(prev => { const n = new Map(prev); n.delete(photoId); return n })
+  // «Отменить» — выйти без сохранения изменений (вернуть снимок настроек).
+  function handleTransformCancel() {
+    const snap = editSnapshotRef.current
+    if (snap) {
+      Object.entries(snap.prev).forEach(([wallId, prevSettings]) => {
+        setPhotoSettings(wallId, prevSettings)  // null вернёт стену к «без фото»
+      })
+      // Новое неподтверждённое фото — удаляем его файл, если больше не используется.
+      if (snap.isNew) {
+        deletePhoto(snap.photoId)
+        setPhotoCache(prev => { const n = new Map(prev); n.delete(snap.photoId); return n })
+        setThumbCache(prev => { const n = new Map(prev); n.delete(snap.photoId); return n })
       }
     }
+    editSnapshotRef.current = null
     setActivePhotoId(null)
     setUiMode('navigate')
   }
+
+  // (Удаление фото доступно из карточки в навигации; в режиме редактирования — «Отменить».)
 
   const handlePhotoGestureMove = useCallback((dx_mm, dy_mm) => {
     const activeWalls = walls.filter(w => pixelizer.photoSettings[w.id]?.photoId === activePhotoId)
@@ -294,8 +310,17 @@ export default function PixelizerTab() {
 
   // Редактирование существующего фото
   function handleEditPhoto(photoId) {
+    // Снимок текущих настроек стен этого фото — для «Отменить».
+    const prev = {}
+    walls.forEach(w => {
+      if (pixelizer.photoSettings[w.id]?.photoId === photoId) {
+        prev[w.id] = pixelizer.photoSettings[w.id]
+      }
+    })
+    editSnapshotRef.current = { isNew: false, photoId, prev }
     setActivePhotoId(photoId)
     setUiMode('transform')
+    setEyeMode('photo')   // Фото-1: показываем фото при редактировании
   }
 
   // ── Пикселизация ──
@@ -437,7 +462,7 @@ export default function PixelizerTab() {
             sampling={sampling}
             onPixelize={handlePixelize}
             onDone={handleTransformDone}
-            onDelete={handleTransformDelete}
+            onCancel={handleTransformCancel}
             onToast={showToast}
             onQuantize={() => setQuantOpen(true)}
             quantizeActive={pixelizer.quantize != null}
