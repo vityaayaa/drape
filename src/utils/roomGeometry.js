@@ -81,24 +81,38 @@ export function calculateGrid(globalTile, walls, corners) {
     const rightCornerKey = `${wall.id}-${rightWall.id}`
 
     let gridWidthMm = length * 10
+    // Сколько «съедает» сосед-победитель с каждой стороны (мм). leftCut — со стороны
+    // предыдущей стены (левый край развёртки), rightCut — со стороны следующей.
+    let leftCutMm = 0
+    let rightCutMm = 0
 
     if (n >= 2) {
-      const leftWinner = getCornerWinner(leftWall, wall, leftCornerKey, corners, walls, globalTile)
-      if (leftWinner === leftWall.id) {
-        const leftT = parseNum(effectiveTile(globalTile, leftWall.tile_overrides).tile_thickness) ?? 0
-        if (leftWall.wall_active && leftWall.mosaic_active && leftT > 0) {
-          gridWidthMm -= leftT
+      // «Замыкающие» углы открытой цепочки (левый у первой стены, правый у последней)
+      // считаем только если они заданы явно — иначе у крайних стен нет угла.
+      const leftIsWrap = i === 0
+      const rightIsWrap = i === n - 1
+      const leftCornerReal = !leftIsWrap || corners[leftCornerKey] !== undefined
+
+      if (leftCornerReal) {
+        const leftWinner = getCornerWinner(leftWall, wall, leftCornerKey, corners, walls, globalTile)
+        if (leftWinner === leftWall.id) {
+          const leftT = parseNum(effectiveTile(globalTile, leftWall.tile_overrides).tile_thickness) ?? 0
+          if (leftWall.wall_active && leftWall.mosaic_active && leftT > 0) {
+            leftCutMm = leftT
+            gridWidthMm -= leftT
+          }
         }
       }
 
       // Only apply right-corner deduction if right neighbor is distinct from left neighbor,
       // OR if the right corner is explicitly overridden in corners map
       const rightIsExplicit = corners[rightCornerKey] !== undefined
-      if (rightWall.id !== leftWall.id || rightIsExplicit) {
+      if ((rightWall.id !== leftWall.id || rightIsExplicit) && (!rightIsWrap || rightIsExplicit)) {
         const rightWinner = getCornerWinner(wall, rightWall, rightCornerKey, corners, walls, globalTile)
         if (rightWinner === rightWall.id) {
           const rightT = parseNum(effectiveTile(globalTile, rightWall.tile_overrides).tile_thickness) ?? 0
           if (rightWall.wall_active && rightWall.mosaic_active && rightT > 0) {
+            rightCutMm = rightT
             gridWidthMm -= rightT
           }
         }
@@ -122,6 +136,8 @@ export function calculateGrid(globalTile, walls, corners) {
       grid_width_cm: +(gridWidthMm / 10).toFixed(2),
       columns,
       rows,
+      leftCutMm,
+      rightCutMm,
       total_before_masks,
       total_masked,
       total,

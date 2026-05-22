@@ -1,12 +1,22 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import { useProjectStore } from '../../store/projectStore.js'
+import { calculateGrid } from '../../utils/roomGeometry.js'
 import WallMesh from './WallMesh.jsx'
 
 export default function RoomScene({ positions, cx, cz, maxHeight }) {
   const walls = useProjectStore((s) => s.walls)
   const tile = useProjectStore((s) => s.tile)
+  const corners = useProjectStore((s) => s.corners)
   const tileColors = useProjectStore((s) => s.pixelizer.tileColors)
+
+  // Срез угла (сколько «съедает» сосед-победитель) по каждой стене.
+  const cutByWall = useMemo(() => {
+    const grids = calculateGrid(tile, walls, corners)
+    const map = {}
+    grids.forEach((g) => { if (g) map[g.wallId] = { leftCutMm: g.leftCutMm, rightCutMm: g.rightCutMm } })
+    return map
+  }, [tile, walls, corners])
 
   // Единицы мира = см (1 ед = 1 см). Клетка 0.5 м = 50 ед → 6000/120 = 50 делений.
   // Размер 6000 (60 м) — достаточно для любой комнаты, без лишних вершин.
@@ -77,7 +87,7 @@ export default function RoomScene({ positions, cx, cz, maxHeight }) {
             rotationY={pos.rotationY}
             interiorSide={pos.interiorSide}
             renderLength={pos.renderLength}
-            thickness={pos.thickness}
+            cut={cutByWall[wall.id]}
           />
         )
       })}
