@@ -1,16 +1,11 @@
 // src/components/pixelizer/WallsSheet.jsx
-import { useState } from 'react'
 import { useProjectStore } from '../../store/projectStore.js'
+import { Check } from 'lucide-react'
+import Modal from '../ui/Modal.jsx'
 
 export default function WallsSheet({ onClose }) {
   const { walls, pixelizer, setVisibleWalls } = useProjectStore()
   const visible = pixelizer.visibleWalls
-  const [leaving, setLeaving] = useState(false)
-
-  function handleClose() {
-    setLeaving(true)
-    setTimeout(onClose, 200)
-  }
 
   function toggle(id) {
     if (visible === null) {
@@ -26,96 +21,73 @@ export default function WallsSheet({ onClose }) {
   const isVisible = (id) => visible === null || visible.includes(id)
 
   return (
-    <div style={s.overlay} onClick={handleClose}>
-      <div style={s.sheet} onClick={e => e.stopPropagation()} className={leaving ? 'anim-sheet-exit' : 'anim-sheet-enter'}>
-        <div style={s.handle} />
-        <p style={s.title}>Видимость стен</p>
-
+    <Modal
+      open
+      onClose={onClose}
+      title="Видимость стен"
+      footer={
+        <button style={s.allBtn} onClick={showAll}>Показать все</button>
+      }
+    >
+      <div style={s.list}>
         {walls.map(w => (
           <button
             key={w.id}
-            style={{ ...s.row, ...(isVisible(w.id) ? {} : s.rowDim) }}
+            style={{ ...s.row, ...(isVisible(w.id) ? s.rowOn : {}) }}
             onClick={() => toggle(w.id)}
           >
             <div style={{ ...s.check, ...(isVisible(w.id) ? s.checkOn : {}) }}>
-              {isVisible(w.id) && (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                  <polyline points="20 6 9 17 4 12"/>
-                </svg>
-              )}
+              {isVisible(w.id) && <Check size={16} strokeWidth={3} />}
             </div>
             <span style={s.name}>{w.name}</span>
           </button>
         ))}
-
-        <button style={s.allBtn} onClick={showAll}>Показать все</button>
       </div>
-    </div>
+    </Modal>
   )
 }
 
 const s = {
-  overlay: {
-    position: 'fixed', inset: 0,
-    background: 'rgba(0,0,0,0.45)',
-    zIndex: 300,
-    display: 'flex', alignItems: 'flex-end',
-  },
-  sheet: {
-    width: '100%',
-    background: 'rgba(12,12,22,0.97)',
-    backdropFilter: 'blur(24px) saturate(180%)',
-    WebkitBackdropFilter: 'blur(24px) saturate(180%)',
-    borderRadius: '20px 20px 0 0',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderBottom: 'none',
-    padding: '8px 16px',
-    paddingBottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
-    maxHeight: '65vh',
-    overflowY: 'auto',
-  },
-  handle: {
-    width: 36, height: 4,
-    background: 'rgba(255,255,255,0.14)',
-    borderRadius: 2,
-    margin: '0 auto 16px',
-  },
-  title: { fontSize: 14, fontWeight: 600, color: '#f1f5f9', marginBottom: 10 },
+  list: { display: 'flex', flexDirection: 'column', gap: 8 },
   row: {
     display: 'flex', alignItems: 'center',
     width: '100%',
-    padding: '12px 0',
-    background: 'none',
-    border: 'none',
-    borderBottom: '1px solid rgba(255,255,255,0.05)',
+    height: 56,
+    padding: '0 14px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
     cursor: 'pointer',
     gap: 12,
     textAlign: 'left',
-    transition: 'opacity 0.15s',
+    transition: 'all 0.15s',
   },
-  rowDim: { opacity: 0.45 },
+  rowOn: {
+    background: 'var(--accent-soft)',
+    border: '1px solid var(--accent-soft-border)',
+  },
   check: {
-    width: 20, height: 20,
-    borderRadius: 6,
+    width: 24, height: 24,
+    borderRadius: 7,
     border: '1.5px solid rgba(255,255,255,0.20)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     flexShrink: 0,
-  },
-  checkOn: {
-    background: '#818cf8',
-    border: '1.5px solid #818cf8',
     color: '#fff',
   },
-  name: { fontSize: 14, color: '#cbd5e1' },
+  checkOn: {
+    background: 'var(--accent)',
+    border: '1.5px solid var(--accent)',
+  },
+  name: { fontSize: 15, fontWeight: 500, color: 'var(--text-primary)' },
   allBtn: {
     display: 'block', width: '100%',
-    marginTop: 14,
-    padding: '11px',
-    background: 'rgba(129,140,248,0.12)',
-    border: '1px solid rgba(129,140,248,0.28)',
-    borderRadius: 10,
-    color: '#818cf8',
-    fontSize: 14,
+    height: 48,
+    background: 'var(--accent-soft)',
+    border: '1px solid var(--accent-soft-border)',
+    borderRadius: 12,
+    color: 'var(--accent-light)',
+    fontSize: 15,
+    fontWeight: 600,
     cursor: 'pointer',
   },
 }

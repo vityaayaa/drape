@@ -9,7 +9,12 @@ import { isFullyInsideMask } from './pixelizerGeometry.js'
 // ── приватные утилиты ─────────────────────────────────────────────────────────
 
 function wallGrid(wall, globalTile) {
-  const { tileW, tileH, groutW } = resolveWallTile(wall, globalTile)
+  // resolveWallTile возвращает значения в десятых мм (×10) — делим на 10, чтобы получить мм
+  // (как в WallCanvas/pixelizer). Иначе колонок/рядов выходит в 10 раз меньше нужного.
+  const r = resolveWallTile(wall, globalTile)
+  const tileW = r.tileW / 10
+  const tileH = r.tileH / 10
+  const groutW = r.groutW / 10
   const wallW_mm = parseFloat(wall.length) * 10
   const wallH_mm = parseFloat(wall.height) * 10
   if ([tileW, tileH, wallW_mm, wallH_mm].some((v) => isNaN(v) || v <= 0)) return null

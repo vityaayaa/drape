@@ -1,6 +1,6 @@
 // src/components/export/ExportTab.jsx
 import { useState, useMemo, useRef } from 'react'
-import { Download, Upload, Save, Sparkles } from 'lucide-react'
+import { Download, Upload, Save } from 'lucide-react'
 import { useProjectStore } from '../../store/projectStore.js'
 import { buildPalette, withSurplus } from '../../utils/buildPalette.js'
 import { quantizeColors, applyQuantization } from '../../utils/quantizeColors.js'
@@ -8,21 +8,12 @@ import { exportProject, importProject } from '../../utils/projectIO.js'
 import ExportDialog from './ExportDialog.jsx'
 import SpecList from './SpecList.jsx'
 
-const QUANT_OPTIONS = [
-  { id: 'off',  label: 'Без квантизации', count: null },
-  { id: '256',  label: '256', count: 256 },
-  { id: '128',  label: '128', count: 128 },
-  { id: '64',   label: '64',  count: 64  },
-  { id: '32',   label: '32',  count: 32  },
-  { id: '16',   label: '16',  count: 16  },
-]
-
 export default function ExportTab() {
   const walls = useProjectStore((s) => s.walls)
   const tile  = useProjectStore((s) => s.tile)
   const tileColors = useProjectStore((s) => s.pixelizer.tileColors)
+  const quantize = useProjectStore((s) => s.pixelizer.quantize)
 
-  const [quantId, setQuantId] = useState('off')
   const [surplus, setSurplus] = useState(10)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -32,15 +23,14 @@ export default function ExportTab() {
 
   const rawPalette = useMemo(() => buildPalette(walls, tileColors), [walls, tileColors])
 
-  // Применить квантизацию (если выбрана)
-  const quantOption = QUANT_OPTIONS.find((q) => q.id === quantId) ?? QUANT_OPTIONS[0]
+  // Квантизация задаётся во вкладке «Фото» (pixelizer.quantize), здесь только применяем.
   const palette = useMemo(() => {
-    if (!quantOption.count || rawPalette.length <= quantOption.count) return rawPalette
+    if (!quantize || rawPalette.length <= quantize) return rawPalette
     const colorWeights = new Map()
     rawPalette.forEach((entry) => colorWeights.set(entry.hex, entry.count))
-    const mapping = quantizeColors(colorWeights, quantOption.count)
+    const mapping = quantizeColors(colorWeights, quantize)
     return applyQuantization(rawPalette, mapping)
-  }, [rawPalette, quantOption])
+  }, [rawPalette, quantize])
 
   const hasData   = palette.length > 0
   const wallCount = walls.length
@@ -95,32 +85,11 @@ export default function ExportTab() {
             <ParamRow label="Стен" value={String(wallCount)} />
             <ParamRow label="Масок" value={String(maskCount)} />
             <ParamRow label="Всего плиток" value={totalTiles.toLocaleString()} />
-            <ParamRow label="Цветов" value={String(palette.length)} accent />
-          </div>
-        </section>
-
-        {/* Квантизация */}
-        <section style={s.section}>
-          <div style={s.sectionTitleRow}>
-            <Sparkles size={14} color="#a78bfa" />
-            <span style={s.sectionTitle}>КВАНТИЗАЦИЯ ЦВЕТОВ</span>
-          </div>
-          <p style={s.sectionHint}>
-            Снижает число оттенков до выбранного значения, объединяя близкие цвета.
-          </p>
-          <div style={s.quantChips}>
-            {QUANT_OPTIONS.map((opt) => (
-              <button
-                key={opt.id}
-                style={{
-                  ...s.chip,
-                  ...(quantId === opt.id ? s.chipActive : {}),
-                }}
-                onClick={() => setQuantId(opt.id)}
-              >
-                {opt.label}
-              </button>
-            ))}
+            <ParamRow
+              label="Цветов"
+              value={quantize ? `${palette.length} (квант.)` : String(palette.length)}
+              accent
+            />
           </div>
         </section>
 

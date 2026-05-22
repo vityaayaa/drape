@@ -82,7 +82,7 @@ export default function LayoutTab() {
     if (!currentWall) return
     findAndGoTo(currentWall.id, col, canvasRow)
   }, [currentWall, findAndGoTo])
-  const handleGoToSchema = useCallback(() => setTab('schema'), [setTab])
+  const handleGoToSchema = useCallback(() => setTab('export'), [setTab])
 
   // ── Нет активных стен ────────────────────────────────────
   const activeWalls = walls.filter((w) => w.mosaic_active && w.wall_active)

@@ -21,7 +21,11 @@ function floorAnchorStartY(H, rows, tileHpx, groutPx) {
 }
 
 function buildWallGrid(wall, globalTile) {
-  const { tileW, tileH, groutW } = resolveWallTile(wall, globalTile)
+  // resolveWallTile в десятых мм (×10) — приводим к мм делением на 10 (как WallCanvas).
+  const r = resolveWallTile(wall, globalTile)
+  const tileW = r.tileW / 10
+  const tileH = r.tileH / 10
+  const groutW = r.groutW / 10
   const wallW_mm = parseFloat(wall.length) * 10
   const wallH_mm = parseFloat(wall.height) * 10
   if ([tileW, tileH, wallW_mm, wallH_mm].some((v) => isNaN(v) || v <= 0)) return null
@@ -216,7 +220,9 @@ export default function LayoutWallPreview({
     const scrollTarget = tileCenterX - container.offsetWidth / 2
 
     container.scrollTo({ left: Math.max(0, scrollTarget), behavior: 'smooth' })
-  }, [currentTile, wall?.id])
+    // Зависимости — примитивы (не объект currentTile), иначе эффект срабатывает
+    // на каждый рендер (например при «Отметить») и превью самопроизвольно скроллится.
+  }, [currentTile?.wallId, currentTile?.col, currentTile?.row, wall?.id])
 
   const handleClick = useCallback((e) => {
     const canvas = canvasRef.current

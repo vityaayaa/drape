@@ -1,10 +1,11 @@
 // src/components/pixelizer/ActionBar.jsx
 import { useState } from 'react'
-import { RotateCw, ArrowRight, Check, Trash2 } from 'lucide-react'
+import { RotateCw, ArrowRight, Check, Trash2, Atom } from 'lucide-react'
 
 export default function ActionBar({
   uiMode, pixelizerMode, hasPhotos, anyStale, sampling,
   onPixelize, onDone, onDelete, onToast,
+  onQuantize, quantizeActive,
 }) {
   const [deleteTap, setDeleteTap] = useState(false)
 
@@ -45,13 +46,21 @@ export default function ActionBar({
   return (
     <div style={s.bar}>
       <button
-        style={{ ...s.primary, width: '100%', opacity: hasPhotos ? 1 : 0.55 }}
+        style={{ ...s.primary, opacity: hasPhotos ? 1 : 0.55 }}
         className={sampling ? 'btn-pixelize-loading' : (isStale ? 'btn-stale' : '')}
         onClick={handlePixelizeClick}
         disabled={sampling}
       >
         {Icon && <Icon size={18} />}
         <span>{label}</span>
+      </button>
+      <button
+        style={{ ...s.atomBtn, ...(quantizeActive ? s.atomBtnActive : {}) }}
+        onClick={onQuantize}
+        aria-label="Квантизация цветов"
+        title="Квантизация цветов"
+      >
+        <Atom size={20} />
       </button>
     </div>
   )
@@ -102,5 +111,22 @@ const s = {
     fontSize: 14,
     fontWeight: 600,
     cursor: 'pointer',
+  },
+  atomBtn: {
+    width: 48, height: 48,
+    flexShrink: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'rgba(255,255,255,0.05)',
+    border: '1px solid var(--border-strong)',
+    borderRadius: 12,
+    color: 'var(--text-secondary)',
+    cursor: 'pointer',
+    transition: 'all 0.15s',
+  },
+  atomBtnActive: {
+    background: 'var(--accent-soft)',
+    border: '1px solid var(--accent-soft-border)',
+    color: 'var(--accent-light)',
+    boxShadow: '0 0 12px rgba(124,58,237,0.25)',
   },
 }

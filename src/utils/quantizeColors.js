@@ -125,6 +125,41 @@ export function quantizeColors(colorWeights, targetCount) {
 }
 
 /**
+ * Строит mapping исходный_hex → квантованный_hex по палитре и числу цветов.
+ * Если count пустой или цветов и так мало — возвращает null (квантизация не нужна).
+ * @param {Array} palette — результат buildPalette ([{ hex, count }])
+ * @param {number|null} count
+ * @returns {Map<string,string>|null}
+ */
+export function buildQuantizeMap(palette, count) {
+  if (!count || !palette || palette.length <= count) return null
+  const weights = new Map()
+  palette.forEach((e) => weights.set(e.hex, e.count))
+  return quantizeColors(weights, count)
+}
+
+/**
+ * Применяет mapping к посчитанным цветам плиток (для отображения мозаики).
+ * @param {Object} tileColors — { wallId: { 'col_row': '#hex' } }
+ * @param {Map<string,string>|null} map
+ * @returns {Object} новый tileColors с переотображёнными цветами (или исходный, если map=null)
+ */
+export function quantizeTileColors(tileColors, map) {
+  if (!map) return tileColors
+  const out = {}
+  for (const wallId in tileColors) {
+    const wallColors = tileColors[wallId]
+    const newWall = {}
+    for (const key in wallColors) {
+      const hex = wallColors[key]
+      newWall[key] = map.get(hex) ?? hex
+    }
+    out[wallId] = newWall
+  }
+  return out
+}
+
+/**
  * Применить mapping к buildPalette результату.
  * Возвращает агрегированную палитру под новыми цветами.
  */

@@ -8,10 +8,12 @@ export default function RoomScene({ positions, cx, cz, maxHeight }) {
   const tile = useProjectStore((s) => s.tile)
   const tileColors = useProjectStore((s) => s.pixelizer.tileColors)
 
+  // Сетка пола: крупные клетки по 0.5 м (500 мм). 20000/40 = 500.
   const gridLarge = useMemo(
-    () => new THREE.GridHelper(20000, 20, '#3a3f52', '#252b3b'),
+    () => new THREE.GridHelper(20000, 40, '#3a3f52', '#252b3b'),
     [],
   )
+  // Мелкая сетка по 0.1 м (100 мм). 20000/200 = 100.
   const gridSmall = useMemo(() => {
     const g = new THREE.GridHelper(20000, 200, '#1e2435', '#181d2b')
     g.position.y = 0.1
@@ -73,6 +75,7 @@ export default function RoomScene({ positions, cx, cz, maxHeight }) {
             position={pos.position}
             rotationY={pos.rotationY}
             interiorSide={pos.interiorSide}
+            renderLength={pos.renderLength}
           />
         )
       })}

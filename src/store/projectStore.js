@@ -19,6 +19,7 @@ const DEFAULT_PIXELIZER = {
   photoSettings: {},       // wallId → { photoId, offsetX_mm, offsetY_mm, scale, opacity }
   tileColors: {},          // wallId → { 'col_row': '#rrggbb' }
   tileColorsStale: {},     // wallId → bool
+  quantize: null,          // null = без квантизации; число = целевое кол-во цветов
 }
 
 export const useProjectStore = create((set, get) => ({
@@ -131,6 +132,9 @@ export const useProjectStore = create((set, get) => ({
   setVisibleWalls: (walls) =>
     set((s) => ({ pixelizer: { ...s.pixelizer, visibleWalls: walls } })),
 
+  setQuantize: (count) =>
+    set((s) => ({ pixelizer: { ...s.pixelizer, quantize: count } })),
+
   setPhotoSettings: (wallId, settings) =>
     set((s) => {
       const photoSettings   = { ...s.pixelizer.photoSettings }
@@ -141,8 +145,15 @@ export const useProjectStore = create((set, get) => ({
         delete tileColors[wallId]
         delete tileColorsStale[wallId]
       } else {
-        photoSettings[wallId]   = settings
-        tileColorsStale[wallId] = true
+        // Поля, которые влияют только на отображение, не на пикселизацию.
+        const DISPLAY_ONLY = ['opacity', 'brightness', 'contrast', 'saturation']
+        const prev = photoSettings[wallId]
+        const sampleAffectingChanged = !prev || ['photoId','offsetX_mm','offsetY_mm','scale']
+          .some(k => prev[k] !== settings[k])
+        photoSettings[wallId] = settings
+        if (sampleAffectingChanged) {
+          tileColorsStale[wallId] = true
+        }
       }
       return { pixelizer: { ...s.pixelizer, photoSettings, tileColors, tileColorsStale } }
     }),

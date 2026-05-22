@@ -41,7 +41,8 @@ export default function ViewerTab() {
   const { positions, center } = computeWallPositions(activeWalls, corners)
   const totalSpan = activeWalls.reduce((m, w) => m + (parseFloat(w.length) || 0), 0)
   const maxHeight = activeWalls.reduce((m, w) => Math.max(m, parseFloat(w.height) || 0), 0)
-  const camDist = Math.max(totalSpan * 0.9, maxHeight * 2.5, 400)
+  // Меньший множитель → камера ближе → комната выглядит крупнее.
+  const camDist = Math.max(totalSpan * 0.6, maxHeight * 1.8, 300)
 
   const cx = center[0]
   const cz = center[2]

@@ -13,13 +13,27 @@ import WallSelectSheet from './WallSelectSheet.jsx'
 import WallsSheet from './WallsSheet.jsx'
 import Toast from './Toast.jsx'
 import EmptyState from '../ui/EmptyState.jsx'
+import Modal from '../ui/Modal.jsx'
+import { buildPalette } from '../../utils/buildPalette.js'
+import { buildQuantizeMap, quantizeTileColors } from '../../utils/quantizeColors.js'
 import { LayoutGrid } from 'lucide-react'
+
+const QUANT_OPTIONS = [
+  { id: 'off', label: 'Без квантизации', count: null },
+  { id: '256', label: '256 цветов', count: 256 },
+  { id: '128', label: '128 цветов', count: 128 },
+  { id: '64',  label: '64 цвета',   count: 64 },
+  { id: '32',  label: '32 цвета',   count: 32 },
+  { id: '16',  label: '16 цветов',  count: 16 },
+]
 
 export default function PixelizerTab() {
   const {
     walls, tile, corners, pixelizer,
-    setPixelizerMode, setGridVisible, setPhotoSettings, setTileColors,
+    setPixelizerMode, setGridVisible, setPhotoSettings, setTileColors, setQuantize,
   } = useProjectStore()
+
+  const [quantOpen, setQuantOpen] = useState(false)
 
   // ── UI State Machine ──
   const [uiMode, setUiMode] = useState('navigate') // 'navigate' | 'addPhoto' | 'transform'
@@ -153,11 +167,17 @@ export default function PixelizerTab() {
   }, [])
 
   // ── Eye cycling ──
+  // До пикселизации: фото → фото+сетка. После: + мозаика → мозаика+сетка.
   const cycleEye = useCallback(() => {
     if (pixelizer.mode === 'mosaic') {
-      setEyeMode(m => m === 'mosaic' ? 'photo+grid' : 'mosaic')
+      setEyeMode(m => ({
+        'photo':       'photo+grid',
+        'photo+grid':  'mosaic',
+        'mosaic':      'mosaic+grid',
+        'mosaic+grid': 'photo',
+      }[m] ?? 'mosaic'))
     } else {
-      setEyeMode(m => ({ photo: 'photo+grid', 'photo+grid': 'grid', grid: 'photo' }[m] ?? 'photo'))
+      setEyeMode(m => (m === 'photo' ? 'photo+grid' : 'photo'))
     }
   }, [pixelizer.mode])
 
@@ -327,13 +347,27 @@ export default function PixelizerTab() {
 
   // ── Render params (что рисует canvas) ──
   const renderParams = useMemo(() => {
-    const isMosaic = pixelizer.mode === 'mosaic' && eyeMode === 'mosaic'
+    const isMosaic = pixelizer.mode === 'mosaic' && (eyeMode === 'mosaic' || eyeMode === 'mosaic+grid')
     return {
       useMosaic:   isMosaic,
       hidePhoto:   !isMosaic && eyeMode === 'grid',
-      gridVisible: eyeMode === 'photo+grid' || eyeMode === 'grid',
+      gridVisible: eyeMode === 'photo+grid' || eyeMode === 'grid' || eyeMode === 'mosaic+grid',
     }
   }, [pixelizer.mode, eyeMode])
+
+  // ── Квантизация для отображения мозаики ──
+  const rawPalette = useMemo(
+    () => buildPalette(walls, pixelizer.tileColors),
+    [walls, pixelizer.tileColors]
+  )
+  const quantMap = useMemo(
+    () => buildQuantizeMap(rawPalette, pixelizer.quantize),
+    [rawPalette, pixelizer.quantize]
+  )
+  const displayPixelizer = useMemo(() => {
+    if (!quantMap) return pixelizer
+    return { ...pixelizer, tileColors: quantizeTileColors(pixelizer.tileColors, quantMap) }
+  }, [pixelizer, quantMap])
 
   // ── Пустой экран — нет стен ──
   const activeWalls = walls.filter(w => w.wall_active)
@@ -347,7 +381,7 @@ export default function PixelizerTab() {
       <div ref={panoramaRef} style={s.panorama}>
         <PhotoPanorama
           walls={visibleWalls}
-          pixelizer={pixelizer}
+          pixelizer={displayPixelizer}
           tile={tile}
           corners={corners}
           canvasScale={canvasScale}
@@ -398,6 +432,8 @@ export default function PixelizerTab() {
             onDone={handleTransformDone}
             onDelete={handleTransformDelete}
             onToast={showToast}
+            onQuantize={() => setQuantOpen(true)}
+            quantizeActive={pixelizer.quantize != null}
           />
         )}
 
@@ -416,6 +452,28 @@ export default function PixelizerTab() {
 
       {/* Шит стен */}
       {showWalls && <WallsSheet onClose={() => setShowWalls(false)} />}
+
+      {/* Модалка квантизации */}
+      <Modal open={quantOpen} onClose={() => setQuantOpen(false)} title="Квантизация цветов">
+        <p style={s.quantHint}>
+          Снижает число оттенков, объединяя близкие цвета. Виден результат сразу на мозаике.
+        </p>
+        <div style={s.quantList}>
+          {QUANT_OPTIONS.map((opt) => {
+            const active = (pixelizer.quantize ?? null) === opt.count
+            return (
+              <button
+                key={opt.id}
+                style={{ ...s.quantOpt, ...(active ? s.quantOptActive : {}) }}
+                onClick={() => { setQuantize(opt.count); setPixelizerMode('mosaic'); setEyeMode('mosaic') }}
+              >
+                {opt.label}
+                {active && <span style={s.quantCheck}>✓</span>}
+              </button>
+            )
+          })}
+        </div>
+      </Modal>
 
       {/* Toast */}
       <Toast message={toastMsg} />
@@ -455,4 +513,35 @@ const s = {
     overflow: 'hidden',
     position: 'relative',
   },
+  quantHint: {
+    fontSize: 13,
+    color: 'var(--text-hint)',
+    margin: '0 0 14px',
+    lineHeight: 1.5,
+  },
+  quantList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 8,
+  },
+  quantOpt: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 48,
+    padding: '0 16px',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid var(--border)',
+    borderRadius: 12,
+    color: 'var(--text-secondary)',
+    fontSize: 15,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  quantOptActive: {
+    background: 'var(--accent-soft)',
+    border: '1px solid var(--accent-soft-border)',
+    color: 'var(--accent-light)',
+  },
+  quantCheck: { fontSize: 16, fontWeight: 700 },
 }

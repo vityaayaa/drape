@@ -1,78 +1,109 @@
 // src/components/room/FlowStepper.jsx
-// Видимая полоска-«ход работы» + кнопка «?» с гайдом.
-import { useProjectStore } from '../../store/projectStore.js'
-import InfoPopover from '../ui/InfoPopover.jsx'
+// Верхний заголовок «Как работать?» + кнопка «?», открывающая подробный
+// листаемый гайд по центру экрана.
+import { useState } from 'react'
+import { HelpCircle, ChevronLeft, ChevronRight } from 'lucide-react'
+import Modal from '../ui/Modal.jsx'
 
-const STEPS = [
-  { id: 'room',      label: 'Комната',  short: '1' },
-  { id: 'pixelizer', label: 'Фото',     short: '2' },
-  { id: 'viewer',    label: '3D',       short: '3' },
-  { id: 'export',    label: 'Схема',    short: '4' },
-  { id: 'layout',    label: 'Укладка',  short: '5' },
+const GUIDE = [
+  {
+    n: '1', t: 'Комната',
+    blocks: [
+      'Задайте параметры плитки: ширину, высоту, толщину и ширину шва (всё в мм), а также цвет шва.',
+      'Добавьте стены кнопкой «+ Добавить стену». Для каждой укажите длину и высоту в сантиметрах.',
+      'При необходимости добавьте маски-препятствия (двери, окна, ниши) — плитки под ними не считаются.',
+      'Для отдельной стены можно переопределить параметры плитки, если она отличается от общей.',
+    ],
+  },
+  {
+    n: '2', t: 'Фото',
+    blocks: [
+      'Нажмите «Добавить фото» и выберите стены, на которые ляжет одно фото (можно несколько подряд).',
+      'В режиме редактирования двигайте фото одним пальцем, масштабируйте щипком. Настройте яркость, контраст, насыщенность и прозрачность.',
+      'Кнопка-атом рядом с «Пикселизировать» включает квантизацию — снижение числа цветов, чтобы заранее видеть результат.',
+      'Нажмите «Пикселизировать» — каждая плитка получит усреднённый цвет с фотографии.',
+    ],
+  },
+  {
+    n: '3', t: '3D',
+    blocks: [
+      'Осмотрите комнату в объёме. Вращайте одним пальцем, масштабируйте щипком.',
+      'Двойной тап по стене — перенести точку вращения туда. Двойной тап по полу — вернуть точку в центр.',
+      'Кнопки видов: Спереди, Сверху, Изометрия. Кнопка сброса возвращает камеру в исходное положение.',
+    ],
+  },
+  {
+    n: '4', t: 'Схема',
+    blocks: [
+      'Здесь — спецификация проекта: список плиток по цветам с количеством.',
+      'Задайте запас на бой (%) — он добавится к итоговым количествам.',
+      'Скачайте SVG-схему для печати или сохраните/загрузите проект целиком (с фотографиями).',
+    ],
+  },
+  {
+    n: '5', t: 'Укладка',
+    blocks: [
+      'Пошаговый помощник укладки. Двигайтесь кнопками «Предыдущая»/«Следующая» или свайпом.',
+      'Режим «по рядам» — укладка снизу вверх; «по цветам» — группировка одинаковых плиток.',
+      'Отмечайте уложенные плитки. Кнопка «К плитке…» — быстрый переход по номеру.',
+    ],
+  },
 ]
 
-export default function FlowStepper({ current }) {
-  const setActiveTab = useProjectStore((s) => s.setActiveTab)
-  const currentIdx = STEPS.findIndex((s) => s.id === current)
+export default function FlowStepper() {
+  const [open, setOpen] = useState(false)
+  const [page, setPage] = useState(0)
+
+  const openGuide = () => { setPage(0); setOpen(true) }
+  const cur = GUIDE[page]
+  const isFirst = page === 0
+  const isLast = page === GUIDE.length - 1
 
   return (
     <div style={s.wrap}>
-      <div style={s.stepperRow}>
-        <div style={s.steps} role="list">
-          {STEPS.map((step, i) => {
-            const isActive = i === currentIdx
-            const isPassed = i < currentIdx
-            return (
-              <button
-                key={step.id}
-                role="listitem"
-                onClick={() => setActiveTab(step.id)}
-                style={{
-                  ...s.step,
-                  ...(isActive ? s.stepActive : isPassed ? s.stepPassed : s.stepFuture),
-                }}
-              >
-                <span style={{
-                  ...s.bullet,
-                  ...(isActive ? s.bulletActive : isPassed ? s.bulletPassed : s.bulletFuture),
-                }}>
-                  {step.short}
-                </span>
-                <span style={s.label}>{step.label}</span>
-                {i < STEPS.length - 1 && <span style={s.arrow}>›</span>}
-              </button>
-            )
-          })}
-        </div>
-        <div style={s.helpWrap}>
-          <InfoPopover title="Как работать?" ariaLabel="Как работать">
-            <HelpContent />
-          </InfoPopover>
-        </div>
+      <div style={s.row}>
+        <h2 style={s.heading}>Как работать?</h2>
+        <button style={s.helpBtn} onClick={openGuide} aria-label="Как работать">
+          <HelpCircle size={20} />
+        </button>
       </div>
-    </div>
-  )
-}
 
-function HelpContent() {
-  const items = [
-    { n: '1', t: 'Комната', d: 'Задайте размеры стен и параметры плитки (ширина, высота, шов). Добавьте маски-препятствия (двери, окна).' },
-    { n: '2', t: 'Фото', d: 'Приложите фото стен. Подгоните рамку под форму стен. Запустите пикселизацию — плитки получат цвет фотографии.' },
-    { n: '3', t: '3D', d: 'Посмотрите комнату в объёме. Двойной тап — перенести точку вращения. Кнопки видов: спереди, сверху, изометрия.' },
-    { n: '4', t: 'Схема', d: 'Откройте спецификацию: список плиток по цветам, квантизация, экспорт SVG, сохранение/загрузка проекта.' },
-    { n: '5', t: 'Укладка', d: 'Пошаговая укладка плиток. Двигайтесь по последовательности или прыгайте к нужной плитке.' },
-  ]
-  return (
-    <div>
-      {items.map((it) => (
-        <div key={it.n} style={hs.item}>
-          <span style={hs.num}>{it.n}</span>
-          <div>
-            <div style={hs.title}>{it.t}</div>
-            <div style={hs.desc}>{it.d}</div>
-          </div>
+      <Modal open={open} onClose={() => setOpen(false)} title="Как работать?">
+        <div style={gs.stepHeader}>
+          <span style={gs.num}>{cur.n}</span>
+          <span style={gs.stepTitle}>{cur.t}</span>
         </div>
-      ))}
+        <div style={gs.blocks}>
+          {cur.blocks.map((b, i) => (
+            <div key={i} style={gs.block}>
+              <span style={gs.dot} />
+              <span>{b}</span>
+            </div>
+          ))}
+        </div>
+
+        <div style={gs.nav}>
+          <button
+            style={{ ...gs.navBtn, ...(isFirst ? gs.navBtnDisabled : {}) }}
+            onClick={() => !isFirst && setPage((p) => p - 1)}
+            disabled={isFirst}
+          >
+            <ChevronLeft size={18} /> Назад
+          </button>
+          <div style={gs.dots}>
+            {GUIDE.map((_, i) => (
+              <span key={i} style={{ ...gs.pageDot, ...(i === page ? gs.pageDotActive : {}) }} />
+            ))}
+          </div>
+          {isLast ? (
+            <button style={gs.navBtn} onClick={() => setOpen(false)}>Готово</button>
+          ) : (
+            <button style={gs.navBtn} onClick={() => setPage((p) => p + 1)}>
+              Далее <ChevronRight size={18} />
+            </button>
+          )}
+        </div>
+      </Modal>
     </div>
   )
 }
@@ -87,81 +118,86 @@ const s = {
     WebkitBackdropFilter: 'blur(20px)',
     borderBottom: '1px solid var(--border)',
   },
-  stepperRow: {
+  row: {
     display: 'flex',
     alignItems: 'center',
-    padding: '10px 12px 10px 14px',
-    gap: 8,
+    justifyContent: 'space-between',
+    padding: '12px 16px',
   },
-  steps: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 2,
-    flex: 1,
-    overflowX: 'auto',
-    scrollbarWidth: 'none',
-    msOverflowStyle: 'none',
+  heading: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: 'var(--text-primary)',
+    margin: 0,
   },
-  step: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 6,
-    padding: '4px 4px',
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    fontFamily: 'var(--font-ui)',
-    flexShrink: 0,
-  },
-  stepActive:  { color: 'var(--accent-light)' },
-  stepPassed:  { color: 'var(--text-secondary)' },
-  stepFuture:  { color: 'var(--text-disabled)' },
-  bullet: {
-    width: 22, height: 22, borderRadius: '50%',
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 11, fontWeight: 700,
-    flexShrink: 0,
-  },
-  bulletActive: {
-    background: 'var(--accent-grad)',
-    color: '#fff',
-    boxShadow: '0 0 12px rgba(124,58,237,0.5)',
-  },
-  bulletPassed: {
+  helpBtn: {
+    width: 38, height: 38,
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: 'var(--accent-soft)',
-    color: 'var(--accent-light)',
     border: '1px solid var(--accent-soft-border)',
+    borderRadius: 10,
+    color: 'var(--accent-light)',
+    cursor: 'pointer',
+    flexShrink: 0,
   },
-  bulletFuture: {
-    background: 'rgba(255,255,255,0.04)',
-    color: 'var(--text-disabled)',
-    border: '1px solid var(--border)',
-  },
-  label: { fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap' },
-  arrow: { fontSize: 14, marginLeft: 2, color: 'var(--text-disabled)' },
-  helpWrap: { flexShrink: 0 },
 }
 
-const hs = {
-  item: {
+const gs = {
+  stepHeader: {
     display: 'flex',
-    gap: 12,
-    padding: '10px 0',
-    borderBottom: '1px solid var(--border)',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
   },
   num: {
-    width: 24,
-    height: 24,
-    borderRadius: '50%',
+    width: 28, height: 28, borderRadius: '50%',
     background: 'var(--accent-grad)',
     color: '#fff',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: 12,
-    fontWeight: 700,
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: 14, fontWeight: 700,
     flexShrink: 0,
   },
-  title: { fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 2 },
-  desc: { fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.5 },
+  stepTitle: { fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' },
+  blocks: { display: 'flex', flexDirection: 'column', gap: 12 },
+  block: {
+    display: 'flex',
+    gap: 10,
+    fontSize: 14,
+    color: 'var(--text-secondary)',
+    lineHeight: 1.55,
+  },
+  dot: {
+    width: 6, height: 6, borderRadius: '50%',
+    background: 'var(--accent-light)',
+    marginTop: 7,
+    flexShrink: 0,
+  },
+  nav: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginTop: 20,
+  },
+  navBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 4,
+    height: 40,
+    padding: '0 14px',
+    background: 'var(--accent-soft)',
+    border: '1px solid var(--accent-soft-border)',
+    borderRadius: 10,
+    color: 'var(--accent-light)',
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  navBtnDisabled: { opacity: 0.35, cursor: 'not-allowed' },
+  dots: { display: 'flex', gap: 6 },
+  pageDot: {
+    width: 7, height: 7, borderRadius: '50%',
+    background: 'var(--border-strong)',
+  },
+  pageDotActive: { background: 'var(--accent-light)' },
 }

@@ -37,11 +37,13 @@ export function computeWallPositions(walls, corners, thickness = 10) {
     const dirRad = (dirDegs[i] * Math.PI) / 180
 
     // Чётные стены (0, 2, …) — полная длина, перекрывают углы.
-    // Нечётные стены (1, 3, …) — укорачиваются на thickness с каждой стороны,
-    // чтобы торцы примыкали к внутренней плоскости соседних стен.
+    // Нечётные стены (1, 3, …) — укорачиваются на thickness/2 с каждой стороны,
+    // чтобы их торец примыкал ровно к внутренней плоскости соседней чётной стены
+    // (без зазоров и без z-fighting на углах).
     const trimmed = (i % 2 === 1)
-    const startTrim = trimmed && i > 0 ? thickness : 0
-    const endTrim   = trimmed && i < active.length - 1 ? thickness : 0
+    const half = thickness / 2
+    const startTrim = trimmed && i > 0 ? half : 0
+    const endTrim   = trimmed && i < active.length - 1 ? half : 0
     const renderL   = Math.max(L - startTrim - endTrim, 1)
 
     const startX = posX + Math.cos(dirRad) * startTrim
@@ -53,7 +55,8 @@ export function computeWallPositions(walls, corners, thickness = 10) {
       wallId: wall.id,
       position: [cx, H / 2, cz],
       rotationY: dirRad,
-      length: renderL,
+      length: L,
+      renderLength: renderL,
       height: H,
     }
 

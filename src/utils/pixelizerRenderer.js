@@ -6,6 +6,53 @@ function floorAnchorStartY(H, rows, tileH_mm, groutW_mm, canvasScale) {
   return H - rows * stepY
 }
 
+// Определяем поддержку ctx.filter (Safari < 18 не поддерживает).
+let _supportsCtxFilter = null
+function supportsCtxFilter() {
+  if (_supportsCtxFilter !== null) return _supportsCtxFilter
+  try {
+    const c = typeof document !== 'undefined' ? document.createElement('canvas') : null
+    if (!c) return (_supportsCtxFilter = false)
+    const ctx = c.getContext('2d')
+    ctx.filter = 'brightness(0.5)'
+    _supportsCtxFilter = ctx.filter === 'brightness(0.5)'
+    return _supportsCtxFilter
+  } catch { return (_supportsCtxFilter = false) }
+}
+
+// Фолбэк через ImageData: применяет brightness/contrast/saturate к пикселям прямо в области.
+function applyImageDataFilter(ctx, x, y, w, h, brightness, contrast, saturation) {
+  if (w <= 0 || h <= 0) return
+  const ix = Math.max(0, Math.floor(x))
+  const iy = Math.max(0, Math.floor(y))
+  const cw = Math.min(ctx.canvas.width  - ix, Math.ceil(x + w) - ix)
+  const ch = Math.min(ctx.canvas.height - iy, Math.ceil(y + h) - iy)
+  if (cw <= 0 || ch <= 0) return
+  const img = ctx.getImageData(ix, iy, cw, ch)
+  const d = img.data
+  const cf = contrast
+  const cOffset = 128 * (1 - cf)
+  const sf = saturation
+  for (let i = 0; i < d.length; i += 4) {
+    let r = d[i], g = d[i + 1], b = d[i + 2]
+    // Яркость
+    r *= brightness; g *= brightness; b *= brightness
+    // Контраст вокруг 128
+    r = r * cf + cOffset; g = g * cf + cOffset; b = b * cf + cOffset
+    // Насыщенность (вокруг luma)
+    if (sf !== 1) {
+      const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
+      r = luma + (r - luma) * sf
+      g = luma + (g - luma) * sf
+      b = luma + (b - luma) * sf
+    }
+    d[i]     = r < 0 ? 0 : r > 255 ? 255 : r
+    d[i + 1] = g < 0 ? 0 : g > 255 ? 255 : g
+    d[i + 2] = b < 0 ? 0 : b > 255 ? 255 : b
+  }
+  ctx.putImageData(img, ix, iy)
+}
+
 // drawWallPhoto — рисует фото/сетку на canvas одной стены.
 //
 // wallGroupOffsetX_mm: суммарная ширина стен слева от этой в группе (mm)
@@ -41,21 +88,36 @@ export function drawWallPhoto(
     const drawX = (-wallGroupOffsetX_mm + (photoSettings.offsetX_mm ?? 0)) * canvasScale
     const drawY = H - drawH - (photoSettings.offsetY_mm ?? 0) * canvasScale
 
+    const { brightness = 1, contrast = 1, saturation = 1, opacity = 1 } = photoSettings
+    const filterActive = brightness !== 1 || contrast !== 1 || saturation !== 1
+
     ctx.save()
     ctx.beginPath()
     ctx.rect(0, 0, W, H)
     ctx.clip()
-    ctx.globalAlpha = photoSettings.opacity ?? 1
+    ctx.globalAlpha = opacity
     ctx.imageSmoothingEnabled = true
     ctx.imageSmoothingQuality = 'high'
-    const { brightness = 1, contrast = 1, saturation = 1 } = photoSettings
-    if (brightness !== 1 || contrast !== 1 || saturation !== 1) {
+
+    if (filterActive && supportsCtxFilter()) {
       ctx.filter = `brightness(${brightness}) contrast(${contrast}) saturate(${saturation})`
+      ctx.drawImage(photo, drawX, drawY, drawW, drawH)
+      ctx.filter = 'none'
+    } else {
+      ctx.drawImage(photo, drawX, drawY, drawW, drawH)
     }
-    ctx.drawImage(photo, drawX, drawY, drawW, drawH)
-    ctx.filter = 'none'
     ctx.globalAlpha = 1.0
     ctx.restore()
+
+    // Фолбэк для браузеров без ctx.filter: применяем фильтр через ImageData.
+    if (filterActive && !supportsCtxFilter()) {
+      // Применяем только в области, пересекающейся с canvas.
+      const fx = Math.max(0, drawX)
+      const fy = Math.max(0, drawY)
+      const fw = Math.min(W, drawX + drawW) - fx
+      const fh = Math.min(H, drawY + drawH) - fy
+      applyImageDataFilter(ctx, fx, fy, fw, fh, brightness, contrast, saturation)
+    }
   }
 
   // Сетка
@@ -139,7 +201,8 @@ export function drawBoundingBox(
 }
 
 // drawWallMosaic — режим «Мозаика»: каждый тайл залит вычисленным цветом.
-export function drawWallMosaic(ctx, W, H, tileGrid, tileColors, canvasScale) {
+// gridVisible=true рисует тонкие линии-разделители между плитками (полезно при шве 0).
+export function drawWallMosaic(ctx, W, H, tileGrid, tileColors, canvasScale, gridVisible = false) {
   ctx.clearRect(0, 0, W, H)
   const { columns, rows, tileW_mm, tileH_mm, groutW_mm, masks, groutColor } = tileGrid
 
@@ -156,6 +219,24 @@ export function drawWallMosaic(ctx, W, H, tileGrid, tileColors, canvasScale) {
       ctx.fillStyle = tileColors[`${col}_${row}`] || '#3a3a4a'
       ctx.fillRect(r.x, Math.round(r.y + startY), r.w, r.h)
     }
+  }
+
+  // Тонкие разделители (для режима «мозаика+сетка», особенно при шве 0)
+  if (gridVisible) {
+    const stepX = (tileW_mm + groutW_mm) * canvasScale
+    const stepY = (tileH_mm + groutW_mm) * canvasScale
+    ctx.save()
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)'
+    ctx.lineWidth = 1
+    for (let col = 1; col < columns; col++) {
+      const x = Math.round(col * stepX) + 0.5
+      ctx.beginPath(); ctx.moveTo(x, startY); ctx.lineTo(x, H); ctx.stroke()
+    }
+    for (let row = 1; row < rows; row++) {
+      const y = Math.round(startY + row * stepY) + 0.5
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke()
+    }
+    ctx.restore()
   }
 
   _drawMasks(ctx, masks, canvasScale)

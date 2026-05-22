@@ -143,10 +143,6 @@ function TransformPane({ activePhotoId, pixelizer, walls, onPhotoSettingsChange 
           onChange={(v) => update('saturation', v)}
         />
       </div>
-
-      <p style={s.gestureHint}>
-        Жест 1 пальца — двигать фото · пинч — масштабировать
-      </p>
     </div>
   )
 }

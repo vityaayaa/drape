@@ -16,41 +16,54 @@ const CameraRig = forwardRef(function CameraRig(
   }, [invalidate])
 
   // Fix 1: set initial target imperatively on mount (not via controlled prop)
+  // + сразу применяем изометрический FOV, чтобы стартовый вид был ортографическим.
   useEffect(() => {
     if (!orbitRef.current) return
-    orbitRef.current.target.set(...initialTarget)
-    orbitRef.current.update()
+    apiRef.current?.setView('iso')
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const apiRef = useRef(null)
   useImperativeHandle(
     ref,
-    () => ({
+    () => {
+      const api = {
       reset() {
-        if (!orbitRef.current) return
-        camera.position.set(...initialPosition)
-        orbitRef.current.target.set(...initialTarget)
-        orbitRef.current.update()
-        invalidate()
+        api.setView('iso')
       },
       setView(view) {
         if (!orbitRef.current) return
         const H = maxHeight / 2
+        const DEFAULT_FOV = 55
         if (view === 'front') {
+          if (camera.fov !== DEFAULT_FOV) { camera.fov = DEFAULT_FOV; camera.updateProjectionMatrix() }
           camera.position.set(cx, H, cz + camDist)
           orbitRef.current.target.set(cx, H, cz)
         } else if (view === 'top') {
+          if (camera.fov !== DEFAULT_FOV) { camera.fov = DEFAULT_FOV; camera.updateProjectionMatrix() }
           // Fix 3: tiny Z offset to avoid polar singularity
           camera.position.set(cx, camDist * 1.5, cz + 1)
           orbitRef.current.target.set(cx, 0, cz)
         } else {
-          // iso — то же что reset
-          camera.position.set(...initialPosition)
-          orbitRef.current.target.set(...initialTarget)
+          // iso — настоящий «изометрический» вид: узкий FOV ≈ ортографическая проекция.
+          // Камеру отодвигаем пропорционально, чтобы комната занимала тот же размер на экране.
+          const ISO_FOV = 14
+          const scaleF = Math.tan((DEFAULT_FOV / 2) * Math.PI / 180) /
+                         Math.tan((ISO_FOV / 2) * Math.PI / 180)
+          const isoDist = camDist * scaleF
+          const isoH = Math.SQRT1_2 * isoDist
+          const isoY = 0.5 * isoDist + maxHeight / 2
+          camera.fov = ISO_FOV
+          camera.updateProjectionMatrix()
+          camera.position.set(cx + isoH, isoY, cz + isoH)
+          orbitRef.current.target.set(cx, H, cz)
         }
         orbitRef.current.update()
         invalidate()
       },
-    }),
+      }
+      apiRef.current = api
+      return api
+    },
     [initialPosition, initialTarget, camDist, cx, cz, maxHeight, camera, invalidate],
   )
 
@@ -66,10 +79,14 @@ const CameraRig = forwardRef(function CameraRig(
       const hits = raycaster.intersectObjects(scene.children, true)
         .filter((hit) => hit.object instanceof THREE.Mesh)
       if (hits.length > 0) {
+        // Двойной тап по стене — ставим точку вращения туда.
         orbitRef.current.target.copy(hits[0].point)
-        orbitRef.current.update()
-        invalidate()
+      } else {
+        // Двойной тап по полу/пустоте — сбрасываем точку вращения в центр комнаты.
+        orbitRef.current.target.set(...initialTarget)
       }
+      orbitRef.current.update()
+      invalidate()
     }
 
     // Pixel-radius: точки тапов должны быть достаточно близко.
@@ -159,7 +176,7 @@ const CameraRig = forwardRef(function CameraRig(
       canvas.removeEventListener('touchmove', handleTouchMove)
       canvas.removeEventListener('touchend', handleTouchEnd)
     }
-  }, [gl, camera, scene, invalidate])
+  }, [gl, camera, scene, invalidate, initialTarget])
 
   return (
     <OrbitControls
@@ -169,7 +186,7 @@ const CameraRig = forwardRef(function CameraRig(
       rotateSpeed={0.6}
       zoomSpeed={0.8}
       minDistance={50}
-      maxDistance={camDist * 3}
+      maxDistance={camDist * 6}
       minPolarAngle={0}
       maxPolarAngle={Math.PI}
       enablePan
