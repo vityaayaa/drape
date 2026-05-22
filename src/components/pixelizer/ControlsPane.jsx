@@ -48,9 +48,6 @@ export default function ControlsPane({
 function EmptyPhotos({ onAddPhoto }) {
   return (
     <div style={s.empty}>
-      <div style={s.emptyIconWrap}>
-        <ImageIcon size={36} color="#a78bfa" strokeWidth={1.5} />
-      </div>
       <p style={s.emptyTitle}>Нет фотографий</p>
       <p style={s.emptyHint}>Наложите фото на развёртку и пикселизируйте</p>
       <button style={s.emptyBtn} onClick={onAddPhoto}>
@@ -235,8 +232,9 @@ const s = {
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '24px 32px',
+    padding: '12px 24px',
     textAlign: 'center',
+    gap: 4,
   },
   emptyIconWrap: {
     width: 72,

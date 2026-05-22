@@ -218,31 +218,23 @@ export function drawWallMosaic(ctx, W, H, tileGrid, tileColors, canvasScale, gri
   const startY = floorAnchorStartY(H, rows, tileH_mm, groutW_mm, canvasScale)
   const tileStartY_mm = startY / canvasScale
 
+  // Пиксель-выровненные границы — чтобы между плитками не было паразитных швов
+  // (особенно при шве 0). Мозаика = ТОЛЬКО плитки, без сетки.
+  const stepXf = (tileW_mm + groutW_mm) * canvasScale
+  const stepYf = (tileH_mm + groutW_mm) * canvasScale
+  const tileWf = tileW_mm * canvasScale
+  const tileHf = tileH_mm * canvasScale
+
   for (let row = 0; row < rows; row++) {
+    const y0 = Math.round(startY + row * stepYf)
+    const y1 = Math.round(startY + row * stepYf + tileHf)
     for (let col = 0; col < columns; col++) {
       if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm)) continue
-      const r = tileRect(col, row, tileW_mm, tileH_mm, groutW_mm, canvasScale)
+      const x0 = Math.round(col * stepXf)
+      const x1 = Math.round(col * stepXf + tileWf)
       ctx.fillStyle = tileColors[`${col}_${row}`] || '#3a3a4a'
-      ctx.fillRect(r.x, Math.round(r.y + startY), r.w, r.h)
+      ctx.fillRect(x0, y0, x1 - x0, y1 - y0)
     }
-  }
-
-  // Тонкие разделители (для режима «мозаика+сетка», особенно при шве 0)
-  if (gridVisible) {
-    const stepX = (tileW_mm + groutW_mm) * canvasScale
-    const stepY = (tileH_mm + groutW_mm) * canvasScale
-    ctx.save()
-    ctx.strokeStyle = 'rgba(0,0,0,0.18)'
-    ctx.lineWidth = 1
-    for (let col = 1; col < columns; col++) {
-      const x = Math.round(col * stepX) + 0.5
-      ctx.beginPath(); ctx.moveTo(x, startY); ctx.lineTo(x, H); ctx.stroke()
-    }
-    for (let row = 1; row < rows; row++) {
-      const y = Math.round(startY + row * stepY) + 0.5
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke()
-    }
-    ctx.restore()
   }
 
   _drawMasks(ctx, masks, canvasScale)

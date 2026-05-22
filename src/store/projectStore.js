@@ -140,14 +140,17 @@ export const useProjectStore = create((set, get) => ({
       const photoSettings   = { ...s.pixelizer.photoSettings }
       const tileColors      = { ...s.pixelizer.tileColors }
       const tileColorsStale = { ...s.pixelizer.tileColorsStale }
+      const photoHistory    = { ...(s.pixelizer.photoHistory ?? {}) }
       if (settings === null) {
         delete photoSettings[wallId]
         delete tileColors[wallId]
         delete tileColorsStale[wallId]
       } else {
-        // Поля, которые влияют только на отображение, не на пикселизацию.
-        const DISPLAY_ONLY = ['opacity', 'brightness', 'contrast', 'saturation']
         const prev = photoSettings[wallId]
+        // При смене фото на стене — запоминаем прежнее, чтобы можно было вернуть.
+        if (prev && prev.photoId !== settings.photoId) {
+          photoHistory[wallId] = [...(photoHistory[wallId] ?? []), prev]
+        }
         const sampleAffectingChanged = !prev || ['photoId','offsetX_mm','offsetY_mm','scale']
           .some(k => prev[k] !== settings[k])
         photoSettings[wallId] = settings
@@ -155,8 +158,45 @@ export const useProjectStore = create((set, get) => ({
           tileColorsStale[wallId] = true
         }
       }
-      return { pixelizer: { ...s.pixelizer, photoSettings, tileColors, tileColorsStale } }
+      return { pixelizer: { ...s.pixelizer, photoSettings, tileColors, tileColorsStale, photoHistory } }
     }),
+
+  // Удаляет фото со всех стен, восстанавливая предыдущее (если было).
+  // Возвращает true, если photoId больше нигде не используется (можно удалить blob).
+  removePhotoRestore: (photoId) => {
+    let stillUsed = false
+    set((s) => {
+      const photoSettings   = { ...s.pixelizer.photoSettings }
+      const tileColors      = { ...s.pixelizer.tileColors }
+      const tileColorsStale = { ...s.pixelizer.tileColorsStale }
+      const photoHistory    = { ...(s.pixelizer.photoHistory ?? {}) }
+      for (const wallId of Object.keys(photoSettings)) {
+        if (photoSettings[wallId]?.photoId !== photoId) continue
+        // Ищем в истории последнее фото, отличное от удаляемого
+        const hist = [...(photoHistory[wallId] ?? [])]
+        let restored = null
+        while (hist.length) {
+          const cand = hist.pop()
+          if (cand && cand.photoId !== photoId) { restored = cand; break }
+        }
+        photoHistory[wallId] = hist
+        if (restored) {
+          photoSettings[wallId] = restored
+          tileColorsStale[wallId] = true
+          delete tileColors[wallId]
+        } else {
+          delete photoSettings[wallId]
+          delete tileColors[wallId]
+          delete tileColorsStale[wallId]
+          delete photoHistory[wallId]
+        }
+      }
+      // Проверяем, используется ли photoId ещё где-то
+      stillUsed = Object.values(photoSettings).some((ps) => ps?.photoId === photoId)
+      return { pixelizer: { ...s.pixelizer, photoSettings, tileColors, tileColorsStale, photoHistory } }
+    })
+    return stillUsed
+  },
 
   setTileColors: (wallId, colors) =>
     set((s) => ({

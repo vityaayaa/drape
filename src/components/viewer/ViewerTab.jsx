@@ -38,7 +38,7 @@ export default function ViewerTab() {
     )
   }
 
-  const { positions, center } = computeWallPositions(activeWalls, corners)
+  const { positions, center, openingDir } = computeWallPositions(activeWalls, corners)
   const totalSpan = activeWalls.reduce((m, w) => m + (parseFloat(w.length) || 0), 0)
   const maxHeight = activeWalls.reduce((m, w) => Math.max(m, parseFloat(w.height) || 0), 0)
   // Меньший множитель → камера ближе → комната выглядит крупнее.
@@ -46,10 +46,14 @@ export default function ViewerTab() {
 
   const cx = center[0]
   const cz = center[2]
-  // Обычный перспективный 3/4-ракурс (не изометрия): камера сбоку-сверху-спереди.
   const offH = Math.SQRT1_2 * camDist
   const offY = 0.5 * camDist + maxHeight / 2
-  const initialPosition = [cx + offH, offY, cz + offH]
+  // Если у комнаты есть открытая сторона (U-форма) — смотрим в проём, чтобы
+  // интерьер стен читался в правильном порядке (как на развёртке «Фото»).
+  // Иначе (замкнутая комната) — обычный 3/4-ракурс.
+  const initialPosition = openingDir
+    ? [cx + openingDir[0] * camDist, offY, cz + openingDir[2] * camDist]
+    : [cx + offH, offY, cz + offH]
   const initialTarget   = [cx, maxHeight / 2, cz]
 
   function handleReset() {
