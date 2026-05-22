@@ -85,12 +85,14 @@ function TransformPane({ activePhotoId, pixelizer, walls, onPhotoSettingsChange 
           label="Сдвиг X (мм)"
           value={ps.offsetX_mm}
           step={10}
+          signed
           onChange={(v) => update('offsetX_mm', v)}
         />
         <NumberField
           label="Сдвиг Y (мм)"
           value={ps.offsetY_mm}
           step={10}
+          signed
           onChange={(v) => update('offsetY_mm', v)}
         />
         <NumberField
@@ -144,7 +146,7 @@ function TransformPane({ activePhotoId, pixelizer, walls, onPhotoSettingsChange 
   )
 }
 
-function NumberField({ label, value, step, min, max, decimals = 0, onChange }) {
+function NumberField({ label, value, step, min, max, decimals = 0, onChange, signed = false }) {
   const fmt = (v) => (decimals > 0 ? v.toFixed(decimals) : String(Math.round(v)))
   const [localVal, setLocalVal] = useState(() => fmt(value))
 
@@ -167,9 +169,16 @@ function NumberField({ label, value, step, min, max, decimals = 0, onChange }) {
       <label style={s.fieldLabel}>{label}</label>
       <input
         type="text"
-        inputMode="decimal"
+        // signed → текстовая клавиатура с минусом (decimal-клавиатура на iOS его не даёт)
+        inputMode={signed ? 'text' : 'decimal'}
         value={localVal}
-        onChange={(e) => setLocalVal(e.target.value)}
+        onChange={(e) => {
+          // допускаем только цифры, точку и ведущий минус (для signed)
+          let v = e.target.value
+          v = signed ? v.replace(/[^0-9.\-]/g, '') : v.replace(/[^0-9.]/g, '')
+          if (signed) v = v.replace(/(?!^)-/g, '')  // минус только в начале
+          setLocalVal(v)
+        }}
         onBlur={commit}
         onKeyDown={(e) => { if (e.key === 'Enter') e.target.blur() }}
         style={s.numInput}

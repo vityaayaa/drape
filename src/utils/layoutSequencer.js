@@ -62,7 +62,7 @@ export function buildTileSequence(walls, globalTile, tileColors, palette, mode) 
 
     for (let canvasRow = 0; canvasRow < rows; canvasRow++) {
       for (let col = 0; col < cols; col++) {
-        if (isFullyInsideMask(col, canvasRow, masks, tileW, tileH, groutW, tileStartY_mm, wallH_mm)) continue
+        if (isFullyInsideMask(col, canvasRow, masks, tileW, tileH, groutW, tileStartY_mm, wallH_mm, 20)) continue
 
         const rowFromFloor = rows - 1 - canvasRow
         const hex = wallColors[`${col}_${canvasRow}`] ?? groutColor
