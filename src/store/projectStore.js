@@ -102,6 +102,16 @@ export const useProjectStore = create((set, get) => ({
       ),
     })),
 
+  // Добавить несколько масок сразу (напр. сгенерированную лестницу).
+  addMasks: (wallId, masks) =>
+    set((s) => ({
+      walls: s.walls.map((w) =>
+        w.id === wallId
+          ? { ...w, masks: [...w.masks, ...masks.map((m) => ({ id: genId('m'), name: '', color: '#888888', ...m }))] }
+          : w
+      ),
+    })),
+
   removeMask: (wallId, maskId) =>
     set((s) => ({
       walls: s.walls.map((w) =>

@@ -4,13 +4,15 @@ import { Trash2 } from 'lucide-react'
 import { useProjectStore } from '../../store/projectStore.js'
 import MaskCard from './MaskCard.jsx'
 import TileForm from './TileForm.jsx'
+import StaircaseModal from './StaircaseModal.jsx'
 
 export default function WallCard({ wall, result }) {
-  const { updateWall, removeWall, addMask, setTileOverride, clearTileOverride } = useProjectStore()
+  const { updateWall, removeWall, addMask, addMasks, setTileOverride, clearTileOverride } = useProjectStore()
   const [showOverride, setShowOverride] = useState(Object.keys(wall.tile_overrides).length > 0)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [leaving, setLeaving] = useState(false)
   const [touched, setTouched] = useState({})
+  const [stairsOpen, setStairsOpen] = useState(false)
   const masksListRef = useRef(null)
 
   useEffect(() => {
@@ -125,19 +127,28 @@ export default function WallCard({ wall, result }) {
       <div style={s.masksSection}>
         <div style={s.masksHeader}>
           <span style={s.masksTitle}>Маски-препятствия</span>
-          <button style={s.addMaskBtn} onClick={() => {
-            addMask(wall.id)
-            setTimeout(() => {
-              const last = masksListRef.current?.lastElementChild
-              last?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-            }, 50)
-          }}>+ Добавить</button>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button style={s.addMaskBtn} onClick={() => setStairsOpen(true)}>▟ Лестница</button>
+            <button style={s.addMaskBtn} onClick={() => {
+              addMask(wall.id)
+              setTimeout(() => {
+                const last = masksListRef.current?.lastElementChild
+                last?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+              }, 50)
+            }}>+ Добавить</button>
+          </div>
         </div>
         {wall.masks.length === 0 && <p style={s.empty}>Нет масок</p>}
         <div ref={masksListRef}>
           {wall.masks.map(mask => <MaskCard key={mask.id} wallId={wall.id} mask={mask} />)}
         </div>
       </div>
+
+      <StaircaseModal
+        open={stairsOpen}
+        onClose={() => setStairsOpen(false)}
+        onGenerate={(masks) => addMasks(wall.id, masks)}
+      />
     </div>
   )
 }
