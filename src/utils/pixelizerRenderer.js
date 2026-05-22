@@ -155,11 +155,21 @@ export function drawWallPhoto(
         const y0 = yEdge(row)
         const y1 = yTileEnd(row)
         for (let col = 0; col < columns; col++) {
-          if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm, H / canvasScale)) continue
+          if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm, H / canvasScale, 20)) continue
           const x0 = xEdge(col)
           const x1 = xTileEnd(col)
           ctx.fillRect(x0, y0, x1 - x0, y1 - y0)
         }
+      }
+      // Тонкие линии-разделители — чтобы сетка была видна даже при шве 0.
+      const gridTop = yEdge(0)
+      const gridBot = yTileEnd(rows - 1)
+      ctx.fillStyle = 'rgba(255,255,255,0.10)'
+      for (let col = 1; col < columns; col++) {
+        ctx.fillRect(xEdge(col), gridTop, 1, gridBot - gridTop)
+      }
+      for (let row = 1; row < rows; row++) {
+        ctx.fillRect(0, yEdge(row), W, 1)
       }
     }
   }
@@ -229,7 +239,7 @@ export function drawWallMosaic(ctx, W, H, tileGrid, tileColors, canvasScale, gri
     const y0 = Math.round(startY + row * stepYf)
     const y1 = Math.round(startY + row * stepYf + tileHf)
     for (let col = 0; col < columns; col++) {
-      if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm, H / canvasScale)) continue
+      if (isFullyInsideMask(col, row, masks, tileW_mm, tileH_mm, groutW_mm, tileStartY_mm, H / canvasScale, 20)) continue
       const x0 = Math.round(col * stepXf)
       const x1 = Math.round(col * stepXf + tileWf)
       ctx.fillStyle = tileColors[`${col}_${row}`] || '#3a3a4a'
@@ -258,7 +268,9 @@ function _drawMasks(ctx, masks, canvasScale, wallH_mm = null) {
   for (const mask of masks) {
     const r = maskRectPx(mask, canvasScale, wallH_mm)
     if (isNaN(r.x) || isNaN(r.y) || isNaN(r.w) || isNaN(r.h)) continue
-    ctx.globalAlpha = 0.55
+    // Маска поверх мозаики — почти непрозрачно, чтобы обрезанные плитки были видны
+    // лишь своей влезшей частью (как в реальной укладке).
+    ctx.globalAlpha = 0.95
     ctx.fillStyle = mask.color || '#888888'
     ctx.fillRect(r.x, r.y, r.w, r.h)
     ctx.globalAlpha = 1.0

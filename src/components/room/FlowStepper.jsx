@@ -160,7 +160,8 @@ const gs = {
     flexShrink: 0,
   },
   stepTitle: { fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' },
-  blocks: { display: 'flex', flexDirection: 'column', gap: 12, minHeight: 280 },
+  // Фикс. высота — все вкладки гайда одинакового размера (кнопки на одном месте).
+  blocks: { display: 'flex', flexDirection: 'column', gap: 12, height: 330, overflowY: 'auto' },
   block: {
     display: 'flex',
     gap: 10,

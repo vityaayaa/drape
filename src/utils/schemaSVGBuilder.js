@@ -116,7 +116,7 @@ export function buildSchemaSVG({ walls, tile, tileColors, palette, options = {} 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < columns; col++) {
         // Маски — оставляем фон шва (вырез), плитку не рисуем
-        if (isFullyInsideMask(col, row, masks, tileW, tileH, groutW, tileStartY_mm, wallH_mm)) continue
+        if (isFullyInsideMask(col, row, masks, tileW, tileH, groutW, tileStartY_mm, wallH_mm, 20)) continue
         const tx = (x + col * stepX).toFixed(1)
         const ty = (startY + row * stepY).toFixed(1)
         const hex = wallColors[`${col}_${row}`] || gc
