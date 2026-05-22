@@ -17,21 +17,9 @@ export default function WallMesh({ wall, tile, tileColors, position, rotationY, 
     return tex
   }, [canvas])
 
-  // Для зеркальной грани (-Z) нужно отразить текстуру по X,
-  // иначе плитки будут «зеркальными».
-  const textureFlipped = useMemo(() => {
-    if (!canvas) return null
-    const tex = new THREE.CanvasTexture(canvas)
-    tex.colorSpace = THREE.SRGBColorSpace
-    tex.wrapS = THREE.RepeatWrapping
-    tex.repeat.x = -1
-    tex.offset.x = 1
-    return tex
-  }, [canvas])
-
   useEffect(() => {
-    return () => { texture?.dispose(); textureFlipped?.dispose() }
-  }, [texture, textureFlipped])
+    return () => { texture?.dispose() }
+  }, [texture])
 
   const L = parseFloat(wall.length)
   const H = parseFloat(wall.height)
@@ -43,11 +31,10 @@ export default function WallMesh({ wall, tile, tileColors, position, rotationY, 
   const EXTERIOR = '#3b425a'   // приятный нейтральный exterior (не чёрный)
   const FRAME    = '#4a5568'   // торцы стены
 
-  // material-4 = +Z грань, material-5 = -Z грань.
-  // Инвертированный выбор: чтобы ориентация совпадала с развёрткой во вкладке «Фото»
-  // (раньше содержимое стен было зеркальным).
+  // material-4 = +Z грань, material-5 = -Z грань. Текстуру кладём на интерьерную
+  // грань без зеркалирования — ориентация совпадает с развёрткой «Фото».
   const interiorIsPositive = interiorSide === 'positive'
-  const interiorTexture = interiorIsPositive ? textureFlipped : texture
+  const interiorTexture = texture
 
   return (
     <mesh position={position} rotation={[0, rotationY, 0]}>
