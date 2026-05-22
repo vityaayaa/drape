@@ -77,6 +77,7 @@ export default function RoomScene({ positions, cx, cz, maxHeight }) {
             rotationY={pos.rotationY}
             interiorSide={pos.interiorSide}
             renderLength={pos.renderLength}
+            thickness={pos.thickness}
           />
         )
       })}

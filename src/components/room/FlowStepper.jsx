@@ -122,7 +122,7 @@ const s = {
   row: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'flex-end',
     gap: 10,
     padding: '12px 16px',
   },

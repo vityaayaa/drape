@@ -3,7 +3,7 @@ import * as THREE from 'three'
 import MaskOverlay from './MaskOverlay.jsx'
 import { buildTileTexture } from '../../utils/buildTileTexture.js'
 
-export default function WallMesh({ wall, tile, tileColors, position, rotationY, interiorSide = 'positive', renderLength }) {
+export default function WallMesh({ wall, tile, tileColors, position, rotationY, interiorSide = 'positive', renderLength, thickness }) {
   const canvas = useMemo(
     () => buildTileTexture(wall, tile, tileColors),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -26,8 +26,7 @@ export default function WallMesh({ wall, tile, tileColors, position, rotationY, 
   if (!L || !H) return null
   // Длина бокса — обрезанная (renderLength), чтобы стены сходились на углах вровень.
   const boxL = renderLength ?? L
-
-  const THICKNESS = 10
+  const THICKNESS = thickness ?? 10   // толщина стены = толщина плитки (мир. ед)
   const EXTERIOR = '#3b425a'   // приятный нейтральный exterior (не чёрный)
   const FRAME    = '#4a5568'   // торцы стены
 

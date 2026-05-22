@@ -1,6 +1,6 @@
 // src/components/pixelizer/ControlsPane.jsx
 import { useState, useEffect } from 'react'
-import { Plus, Image as ImageIcon } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import PhotoCard from './PhotoCard.jsx'
 
 export default function ControlsPane({

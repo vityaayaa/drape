@@ -11,6 +11,7 @@ import ViewerToolbar from './ViewerToolbar.jsx'
 export default function ViewerTab() {
   const walls = useProjectStore((s) => s.walls)
   const corners = useProjectStore((s) => s.corners)
+  const tile = useProjectStore((s) => s.tile)
   const setActiveTab = useProjectStore((s) => s.setActiveTab)
   const cameraRef = useRef()
   const [activeView, setActiveView] = useState('default')
@@ -38,7 +39,7 @@ export default function ViewerTab() {
     )
   }
 
-  const { positions, center, openingDir } = computeWallPositions(activeWalls, corners)
+  const { positions, center, openingDir } = computeWallPositions(activeWalls, corners, tile)
   const totalSpan = activeWalls.reduce((m, w) => m + (parseFloat(w.length) || 0), 0)
   const maxHeight = activeWalls.reduce((m, w) => Math.max(m, parseFloat(w.height) || 0), 0)
   // Меньший множитель → камера ближе → комната выглядит крупнее.

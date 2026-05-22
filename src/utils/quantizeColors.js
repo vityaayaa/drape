@@ -12,11 +12,6 @@ function hexToRgb(hex) {
   return [(i >> 16) & 0xff, (i >> 8) & 0xff, i & 0xff]
 }
 
-function rgbToHex(r, g, b) {
-  const c = (v) => v.toString(16).padStart(2, '0')
-  return '#' + c(Math.round(r)) + c(Math.round(g)) + c(Math.round(b))
-}
-
 function boxStats(points) {
   let minR = 255, minG = 255, minB = 255
   let maxR = 0, maxG = 0, maxB = 0
