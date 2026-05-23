@@ -403,12 +403,13 @@ const s = {
   offsetBlock:      { display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 8 },
   offsetBlockLabel: { fontSize: 11, color: 'var(--text-secondary)', fontWeight: 500 },
   offsetFields:     { display: 'flex', gap: 8 },
-  offsetField:      { display: 'flex', alignItems: 'center', gap: 4, flex: 1 },
+  offsetField:      { display: 'flex', alignItems: 'center', gap: 4 },
   offsetFieldLabel: { fontSize: 11, color: 'var(--text-hint)', flexShrink: 0 },
   offsetInput: {
-    flex: 1, height: 32, padding: '0 8px',
+    width: 58, height: 28, padding: '0 6px',
     background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-strong)',
     borderRadius: 8, color: 'var(--text-primary)', fontSize: 12, outline: 'none',
+    boxSizing: 'border-box',
   },
 
   togglesRow:       { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 },
