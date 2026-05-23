@@ -1,5 +1,6 @@
 // src/store/projectStore.js
 import { create } from 'zustand'
+import { calcStaircase, buildStaircaseMasks } from '../utils/staircase.js'
 
 let _idCounter = 0
 const genId = (prefix) => `${prefix}_${Date.now()}_${++_idCounter}`
@@ -43,7 +44,7 @@ export const useProjectStore = create((set, get) => ({
       return {
         walls: [
           ...s.walls,
-          { id, name, length: '', height: '', wall_active: true, mosaic_active: true, tile_overrides: {}, masks: [] },
+          { id, name, length: '', height: '', wall_active: true, mosaic_active: true, tile_overrides: {}, masks: [], stairs: [] },
         ],
       }
     }),
@@ -127,6 +128,93 @@ export const useProjectStore = create((set, get) => ({
           : w
       ),
     })),
+
+  // --- Лестницы ---
+  addStaircase: (wallId, config) =>
+    set((s) => {
+      const wall = s.walls.find((w) => w.id === wallId)
+      if (!wall) return s
+      const stairId = genId('stair')
+      const name = `Лестница ${wall.stairs.length + 1}`
+      const stair = { id: stairId, name, ...config }
+      // calcStaircase ожидает risersCount, в конфиге хранится risers
+      const calc = calcStaircase({ ...stair, risersCount: stair.risers })
+      const rawMasks = calc
+        ? buildStaircaseMasks(calc, {
+            startX: parseFloat(config.startX) || 0,
+            startY: parseFloat(config.startY) || 0,
+            direction: config.direction,
+            color: config.color || '#888888',
+          })
+        : []
+      const newMasks = rawMasks.map((m) => ({ id: genId('m'), staircaseId: stairId, ...m }))
+      return {
+        walls: s.walls.map((w) =>
+          w.id === wallId
+            ? { ...w, stairs: [...w.stairs, stair], masks: [...w.masks, ...newMasks] }
+            : w
+        ),
+      }
+    }),
+
+  removeStaircase: (wallId, stairId) =>
+    set((s) => ({
+      walls: s.walls.map((w) =>
+        w.id === wallId
+          ? {
+              ...w,
+              stairs: w.stairs.filter((st) => st.id !== stairId),
+              masks: w.masks.filter((m) => m.staircaseId !== stairId),
+            }
+          : w
+      ),
+    })),
+
+  updateStaircase: (wallId, stairId, field, value) =>
+    set((s) => ({
+      walls: s.walls.map((w) =>
+        w.id === wallId
+          ? {
+              ...w,
+              stairs: w.stairs.map((st) =>
+                st.id === stairId ? { ...st, [field]: value } : st
+              ),
+            }
+          : w
+      ),
+    })),
+
+  // Обновить конфиг + пересоздать маски (для кнопки «Обновить ступени»)
+  replaceStaircase: (wallId, stairId, config) =>
+    set((s) => {
+      const wall = s.walls.find((w) => w.id === wallId)
+      if (!wall) return s
+      const oldStair = wall.stairs.find((st) => st.id === stairId)
+      if (!oldStair) return s
+      const updatedStair = { ...oldStair, ...config }
+      // calcStaircase ожидает risersCount, в конфиге хранится risers
+      const calc = calcStaircase({ ...updatedStair, risersCount: updatedStair.risers })
+      const rawMasks = calc
+        ? buildStaircaseMasks(calc, {
+            startX: parseFloat(updatedStair.startX) || 0,
+            startY: parseFloat(updatedStair.startY) || 0,
+            direction: updatedStair.direction,
+            color: updatedStair.color || '#888888',
+          })
+        : []
+      const newMasks = rawMasks.map((m) => ({ id: genId('m'), staircaseId: stairId, ...m }))
+      return {
+        walls: s.walls.map((w) =>
+          w.id === wallId
+            ? {
+                ...w,
+                stairs: w.stairs.map((st) => (st.id === stairId ? updatedStair : st)),
+                masks: [...w.masks.filter((m) => m.staircaseId !== stairId), ...newMasks],
+              }
+            : w
+        ),
+      }
+    }),
 
   // --- Углы ---
   setCorner: (key, value) =>
