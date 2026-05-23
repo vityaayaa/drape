@@ -18,15 +18,15 @@ export default function RoomScene({ positions, cx, cz, maxHeight }) {
     return map
   }, [tile, walls, corners])
 
-  // Единицы мира = см (1 ед = 1 см). Клетка 0.5 м = 50 ед → 6000/120 = 50 делений.
+  // Единицы мира = см (1 ед = 1 см). Клетка 0.25 м = 25 ед → 6000/240 = 25 делений.
   // Размер 6000 (60 м) — достаточно для любой комнаты, без лишних вершин.
   const gridLarge = useMemo(
-    () => new THREE.GridHelper(6000, 120, '#3a3f52', '#2a3042'),
+    () => new THREE.GridHelper(6000, 240, '#3a3f52', '#2a3042'),
     [],
   )
-  // Крупный акцент каждые 2.5 м (250 ед) → 6000/24 = 250.
+  // Крупный акцент каждые 1 м (100 ед) → 6000/60 = 100.
   const gridSmall = useMemo(() => {
-    const g = new THREE.GridHelper(6000, 24, '#454b60', '#1e2435')
+    const g = new THREE.GridHelper(6000, 60, '#454b60', '#1e2435')
     g.position.y = -0.1
     return g
   }, [])

@@ -1,18 +1,40 @@
 // src/components/room/WallCard.jsx
 import { useState, useEffect, useRef } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Fence, ChevronDown, Pencil } from 'lucide-react'
 import { useProjectStore } from '../../store/projectStore.js'
+import { calcStaircase } from '../../utils/staircase.js'
 import MaskCard from './MaskCard.jsx'
 import TileForm from './TileForm.jsx'
 import StaircaseModal from './StaircaseModal.jsx'
 
+// Мини-иконка ступеней для кнопки аккордеона
+function StairsIconSmall() {
+  return (
+    <svg width={13} height={13} viewBox="0 0 16 16" fill="none"
+      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"
+      style={{ flexShrink: 0 }}
+    >
+      <polyline points="1,15 1,11 5,11 5,7 9,7 9,3 13,3 13,1" />
+      <polyline points="1,15 15,15 15,1" />
+    </svg>
+  )
+}
+
 export default function WallCard({ wall, result }) {
-  const { updateWall, removeWall, addMask, addMasks, setTileOverride, clearTileOverride } = useProjectStore()
-  const [showOverride, setShowOverride] = useState(Object.keys(wall.tile_overrides).length > 0)
-  const [deleteConfirm, setDeleteConfirm] = useState(false)
-  const [leaving, setLeaving] = useState(false)
-  const [touched, setTouched] = useState({})
-  const [stairsOpen, setStairsOpen] = useState(false)
+  const {
+    updateWall, removeWall, addMask, setTileOverride, clearTileOverride,
+    addStaircase, removeStaircase, updateStaircase, replaceStaircase,
+  } = useProjectStore()
+
+  const [showOverride,     setShowOverride]     = useState(Object.keys(wall.tile_overrides).length > 0)
+  const [deleteConfirm,    setDeleteConfirm]    = useState(false)
+  const [leaving,          setLeaving]          = useState(false)
+  const [touched,          setTouched]          = useState({})
+  const [stairsOpen,       setStairsOpen]       = useState(false)
+  const [editStair,        setEditStair]        = useState(null)
+  const [stairsAccordion,  setStairsAccordion]  = useState(false)
+  const [masksAccordion,   setMasksAccordion]   = useState(false)
+  const [expandedStairId,  setExpandedStairId]  = useState(null)
   const masksListRef = useRef(null)
 
   useEffect(() => {
@@ -123,31 +145,133 @@ export default function WallCard({ wall, result }) {
         </div>
       )}
 
-      {/* Маски */}
+      {/* Лестницы + Маски — два аккордеона */}
       <div style={s.masksSection}>
-        <div style={s.masksHeader}>
-          <span style={s.masksTitle}>Маски-препятствия</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button style={s.addMaskBtn} onClick={() => setStairsOpen(true)}>▟ Лестница</button>
-            <button style={s.addMaskBtn} onClick={() => {
-              addMask(wall.id)
-              setTimeout(() => {
-                const last = masksListRef.current?.lastElementChild
-                last?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-              }, 50)
-            }}>+ Добавить</button>
+
+        {/* Заголовки-тогглы */}
+        <div style={s.accordionHeader}>
+          <button style={s.accordionToggle} onClick={() => setStairsAccordion(v => !v)}>
+            <StairsIconSmall />
+            <span>Лестницы</span>
+            <ChevronDown size={12} style={{
+              marginLeft: 'auto',
+              transition: 'transform 0.2s',
+              transform: stairsAccordion ? 'rotate(180deg)' : 'none',
+            }} />
+          </button>
+          <button style={s.accordionToggle} onClick={() => setMasksAccordion(v => !v)}>
+            <Fence size={13} />
+            <span>Маски</span>
+            <ChevronDown size={12} style={{
+              marginLeft: 'auto',
+              transition: 'transform 0.2s',
+              transform: masksAccordion ? 'rotate(180deg)' : 'none',
+            }} />
+          </button>
+        </div>
+
+        {/* Секция лестниц */}
+        {stairsAccordion && (
+          <div style={s.accordionSection}>
+            <button
+              style={s.addMaskBtn}
+              onClick={() => { setEditStair(null); setStairsOpen(true) }}
+            >
+              + Добавить
+            </button>
+            {(wall.stairs ?? []).map((stair) => {
+              const stairCalc = calcStaircase({ ...stair, risersCount: stair.risers })
+              const isExpanded = expandedStairId === stair.id
+              const stairMasks = wall.masks.filter(m => m.staircaseId === stair.id)
+              return (
+                <div key={stair.id} style={s.stairItem}>
+                  <div style={s.stairItemRow}>
+                    <input
+                      style={s.stairNameInput}
+                      value={stair.name}
+                      onChange={(e) => updateStaircase(wall.id, stair.id, 'name', e.target.value)}
+                    />
+                    <button
+                      style={s.stairIconBtn}
+                      onClick={() => setExpandedStairId(isExpanded ? null : stair.id)}
+                      title={isExpanded ? 'Свернуть' : 'Показать маски'}
+                    >
+                      <ChevronDown size={12} style={{ transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'none' }} />
+                    </button>
+                    <button
+                      style={s.stairIconBtn}
+                      onClick={() => { setEditStair(stair); setStairsOpen(true) }}
+                      title="Настройки лестницы"
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button
+                      style={{ ...s.stairIconBtn, ...s.stairDelBtn }}
+                      onClick={() => removeStaircase(wall.id, stair.id)}
+                      title="Удалить лестницу"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                  {isExpanded && (
+                    <div style={s.stairMaskList}>
+                      {stairCalc && (
+                        <div style={s.stairMeta}>
+                          {stairCalc.riserHeight.toFixed(1)} / {stairCalc.treadDepth.toFixed(1)} см · {stairCalc.angle.toFixed(1)}°
+                        </div>
+                      )}
+                      {stairMasks.map(m => (
+                        <MaskCard key={m.id} wallId={wall.id} mask={m} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+            {(wall.stairs ?? []).length === 0 && (
+              <p style={s.empty}>Нет лестниц</p>
+            )}
           </div>
-        </div>
-        {wall.masks.length === 0 && <p style={s.empty}>Нет масок</p>}
-        <div ref={masksListRef}>
-          {wall.masks.map(mask => <MaskCard key={mask.id} wallId={wall.id} mask={mask} />)}
-        </div>
+        )}
+
+        {/* Секция обычных масок (без staircaseId) */}
+        {masksAccordion && (
+          <div style={s.accordionSection}>
+            <button
+              style={s.addMaskBtn}
+              onClick={() => {
+                addMask(wall.id)
+                setTimeout(() => {
+                  const last = masksListRef.current?.lastElementChild
+                  last?.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+                }, 50)
+              }}
+            >
+              + Добавить
+            </button>
+            {wall.masks.filter(m => !m.staircaseId).length === 0 && (
+              <p style={s.empty}>Нет масок</p>
+            )}
+            <div ref={masksListRef}>
+              {wall.masks
+                .filter(m => !m.staircaseId)
+                .map(mask => <MaskCard key={mask.id} wallId={wall.id} mask={mask} />)}
+            </div>
+          </div>
+        )}
       </div>
 
       <StaircaseModal
         open={stairsOpen}
-        onClose={() => setStairsOpen(false)}
-        onGenerate={(masks) => addMasks(wall.id, masks)}
+        onClose={() => { setStairsOpen(false); setEditStair(null) }}
+        editStair={editStair}
+        onGenerate={(config) => {
+          if (editStair) {
+            replaceStaircase(wall.id, editStair.id, config)
+          } else {
+            addStaircase(wall.id, config)
+          }
+        }}
       />
     </div>
   )
@@ -179,9 +303,35 @@ const s = {
   overrideBtnIcon:   { fontSize: 10, color: '#64748b' },
   overrideBlock:     { margin: '8px 14px', background: '#141820', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 12, overflow: 'hidden' },
   masksSection:      { padding: '10px 14px 14px' },
-  masksHeader:       { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
-  masksTitle:        { fontSize: 12, fontWeight: 600, color: '#475569' },
-  addMaskBtn:        { height: 32, padding: '0 12px', background: 'rgba(139,92,246,0.12)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 8, fontSize: 12, cursor: 'pointer' },
-  empty:             { fontSize: 12, color: '#334155', margin: 0 },
+  empty:             { fontSize: 12, color: '#334155', margin: '4px 0 0' },
   fieldError:        { display: 'block', fontSize: 11, color: '#ef4444', marginTop: 2 },
+
+  // Аккордеоны
+  accordionHeader:  { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 6 },
+  accordionToggle:  {
+    display: 'flex', alignItems: 'center', gap: 5, width: '100%',
+    height: 32, padding: '0 10px',
+    background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.18)',
+    borderRadius: 9, color: '#a78bfa', fontSize: 12, fontWeight: 600,
+    cursor: 'pointer',
+  },
+  accordionSection: { display: 'flex', flexDirection: 'column', gap: 4, paddingBottom: 6 },
+  addMaskBtn:       { height: 32, padding: '0 12px', background: 'rgba(139,92,246,0.12)', color: '#a78bfa', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 8, fontSize: 12, cursor: 'pointer' },
+
+  // Элементы лестницы
+  stairItem:        { background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' },
+  stairItemRow:     { display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px' },
+  stairNameInput:   {
+    flex: 1, height: 30, padding: '0 6px', background: 'rgba(0,0,0,0.2)',
+    border: '1px solid var(--border-strong)', borderRadius: 6,
+    color: 'var(--text-primary)', fontSize: 12, outline: 'none',
+  },
+  stairIconBtn:     {
+    width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+    borderRadius: 7, color: '#94a3b8', cursor: 'pointer', flexShrink: 0,
+  },
+  stairDelBtn:      { color: '#f87171', background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.2)' },
+  stairMaskList:    { borderTop: '1px solid var(--border)', padding: '4px 8px 6px', display: 'flex', flexDirection: 'column', gap: 2 },
+  stairMeta:        { fontSize: 10, color: 'var(--text-hint)', marginBottom: 4 },
 }
