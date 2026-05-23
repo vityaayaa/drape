@@ -343,6 +343,9 @@ function Metric({ label, value, color }) {
 function ErgoHelp() {
   return (
     <div style={eh.wrap}>
+      <p style={eh.rec}><b>Подступёнок</b> — вертикальная стенка ступени, то есть её высота. Чем он выше, тем круче лестница и тяжелее подъём.</p>
+      <p style={eh.rec}><b>Проступь</b> — горизонтальная площадка ступени, куда ставишь ногу. Чем она шире, тем удобнее и безопаснее шаг.</p>
+      <div style={eh.divider} />
       <div style={eh.block}>
         <span style={{ ...eh.dot, background: '#22c55e' }} />
         <div>
@@ -402,11 +405,11 @@ const s = {
 
   offsetBlock:      { display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 8 },
   offsetBlockLabel: { fontSize: 11, color: 'var(--text-secondary)', fontWeight: 500 },
-  offsetFields:     { display: 'flex', gap: 8 },
-  offsetField:      { display: 'flex', alignItems: 'center', gap: 4 },
+  offsetFields:     { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 },
+  offsetField:      { display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 },
   offsetFieldLabel: { fontSize: 11, color: 'var(--text-hint)', flexShrink: 0 },
   offsetInput: {
-    width: 58, height: 28, padding: '0 6px',
+    flex: 1, minWidth: 0, height: 28, padding: '0 6px',
     background: 'rgba(0,0,0,0.3)', border: '1px solid var(--border-strong)',
     borderRadius: 8, color: 'var(--text-primary)', fontSize: 12, outline: 'none',
     boxSizing: 'border-box',

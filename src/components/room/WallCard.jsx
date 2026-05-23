@@ -221,10 +221,7 @@ export default function WallCard({ wall, result }) {
                         </div>
                       )}
                       {stairMasks.map(m => (
-                        <div key={m.id} style={s.stairMaskItem}>
-                          <span style={s.stairMaskName}>{m.name}</span>
-                          <span style={s.stairMaskDim}>{(+m.width).toFixed(1)} × {(+m.height).toFixed(1)} см</span>
-                        </div>
+                        <MaskCard key={m.id} wallId={wall.id} mask={m} />
                       ))}
                     </div>
                   )}
@@ -337,7 +334,4 @@ const s = {
   stairDelBtn:      { color: '#f87171', background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.2)' },
   stairMaskList:    { borderTop: '1px solid var(--border)', padding: '4px 8px 6px', display: 'flex', flexDirection: 'column', gap: 2 },
   stairMeta:        { fontSize: 10, color: 'var(--text-hint)', marginBottom: 4 },
-  stairMaskItem:    { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 4px', borderRadius: 5, background: 'rgba(255,255,255,0.03)' },
-  stairMaskName:    { fontSize: 11, color: 'var(--text-secondary)' },
-  stairMaskDim:     { fontSize: 10, color: 'var(--text-hint)', fontVariantNumeric: 'tabular-nums' },
 }
