@@ -143,27 +143,33 @@ export default function StaircaseModal({ open, onClose, onGenerate, editStair })
       </div>
 
       {/* Сдвиг X / Y */}
-      <div style={s.offsetRow}>
-        <span style={s.offsetLabel}>Сдвиг</span>
-        <OffsetField label="по X" value={startX} onChange={setStartX} signed />
-        <OffsetField label="по Y" value={startY} onChange={setStartY} />
+      <div style={s.offsetBlock}>
+        <span style={s.offsetBlockLabel}>Сдвиг</span>
+        <div style={s.offsetFields}>
+          <OffsetField label="по X" value={startX} onChange={setStartX} signed />
+          <OffsetField label="по Y" value={startY} onChange={setStartY} />
+        </div>
       </div>
 
-      {/* Старт + Направление в одну строку */}
+      {/* Старт + Направление */}
       <div style={s.togglesRow}>
-        <div style={s.toggleGroup}>
-          <span style={s.toggleLabel}>Старт</span>
-          <div style={s.seg}>
-            <SegBtn active={startType === 'immediate'} onClick={() => setStartType('immediate')}>Сразу ↑</SegBtn>
-            <SegBtn active={startType === 'standard'}  onClick={() => setStartType('standard')}>Проступь</SegBtn>
-          </div>
+        <div style={s.toggleBlock}>
+          <span style={s.toggleBlockLabel}>Старт</span>
+          <button
+            style={s.toggleBtn}
+            onClick={() => setStartType(t => t === 'immediate' ? 'standard' : 'immediate')}
+          >
+            {startType === 'immediate' ? 'Сразу ↑' : 'Проступь'}
+          </button>
         </div>
-        <div style={s.toggleGroup}>
-          <span style={s.toggleLabel}>Напр.</span>
-          <div style={s.seg}>
-            <SegBtn active={direction === 'right'} onClick={() => setDirection('right')}>→</SegBtn>
-            <SegBtn active={direction === 'left'}  onClick={() => setDirection('left')}>←</SegBtn>
-          </div>
+        <div style={s.toggleBlock}>
+          <span style={s.toggleBlockLabel}>Направление</span>
+          <button
+            style={s.toggleBtn}
+            onClick={() => setDirection(d => d === 'right' ? 'left' : 'right')}
+          >
+            {direction === 'right' ? '→ Направо' : '← Налево'}
+          </button>
         </div>
       </div>
     </Modal>
@@ -333,15 +339,6 @@ function Metric({ label, value, color }) {
   )
 }
 
-// ─── Сегментная кнопка ────────────────────────────────────────────────────
-function SegBtn({ active, onClick, children }) {
-  return (
-    <button style={{ ...s.segBtn, ...(active ? s.segBtnActive : {}) }} onClick={onClick}>
-      {children}
-    </button>
-  )
-}
-
 // ─── Попап критериев оценки ──────────────────────────────────────────────
 function ErgoHelp() {
   return (
@@ -403,8 +400,9 @@ const s = {
     textAlign: 'center', flexShrink: 0,
   },
 
-  offsetRow:        { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 },
-  offsetLabel:      { fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0 },
+  offsetBlock:      { display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 8 },
+  offsetBlockLabel: { fontSize: 11, color: 'var(--text-secondary)', fontWeight: 500 },
+  offsetFields:     { display: 'flex', gap: 8 },
   offsetField:      { display: 'flex', alignItems: 'center', gap: 4, flex: 1 },
   offsetFieldLabel: { fontSize: 11, color: 'var(--text-hint)', flexShrink: 0 },
   offsetInput: {
@@ -413,20 +411,15 @@ const s = {
     borderRadius: 8, color: 'var(--text-primary)', fontSize: 12, outline: 'none',
   },
 
-  togglesRow:  { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 2 },
-  toggleGroup: { display: 'flex', alignItems: 'center', gap: 6, flex: 1 },
-  toggleLabel: { fontSize: 11, color: 'var(--text-secondary)', flexShrink: 0 },
-  seg: {
-    display: 'flex', gap: 3, background: 'rgba(0,0,0,0.3)',
-    borderRadius: 9, padding: 3, flex: 1,
-  },
-  segBtn: {
-    flex: 1, height: 30, padding: '0 6px',
-    background: 'transparent', border: 'none', borderRadius: 7,
-    color: 'var(--text-secondary)', fontSize: 11, fontWeight: 600,
+  togglesRow:       { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 4 },
+  toggleBlock:      { display: 'flex', flexDirection: 'column', gap: 5 },
+  toggleBlockLabel: { fontSize: 11, color: 'var(--text-secondary)', fontWeight: 500 },
+  toggleBtn: {
+    height: 36, padding: '0 10px',
+    background: 'rgba(139,92,246,0.13)', border: '1px solid rgba(139,92,246,0.32)',
+    borderRadius: 9, color: '#a78bfa', fontSize: 12, fontWeight: 600,
     cursor: 'pointer', whiteSpace: 'nowrap',
   },
-  segBtnActive: { background: 'var(--accent)', color: '#fff' },
 
   genBtn: {
     width: '100%', height: 46, marginTop: 4,

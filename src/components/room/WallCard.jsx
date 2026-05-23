@@ -32,9 +32,9 @@ export default function WallCard({ wall, result }) {
   const [touched,          setTouched]          = useState({})
   const [stairsOpen,       setStairsOpen]       = useState(false)
   const [editStair,        setEditStair]        = useState(null)
-  const [stairsAccordion,  setStairsAccordion]  = useState(true)
-  const [masksAccordion,   setMasksAccordion]   = useState(true)
-  const [renamingStairId,  setRenamingStairId]  = useState(null)
+  const [stairsAccordion,  setStairsAccordion]  = useState(false)
+  const [masksAccordion,   setMasksAccordion]   = useState(false)
+  const [expandedStairId,  setExpandedStairId]  = useState(null)
   const masksListRef = useRef(null)
 
   useEffect(() => {
@@ -181,31 +181,27 @@ export default function WallCard({ wall, result }) {
             </button>
             {(wall.stairs ?? []).map((stair) => {
               const stairCalc = calcStaircase({ ...stair, risersCount: stair.risers })
-              const isRenaming = renamingStairId === stair.id
+              const isExpanded = expandedStairId === stair.id
+              const stairMasks = wall.masks.filter(m => m.staircaseId === stair.id)
               return (
                 <div key={stair.id} style={s.stairItem}>
                   <div style={s.stairItemRow}>
-                    {isRenaming ? (
-                      <input
-                        style={s.stairNameInput}
-                        autoFocus
-                        value={stair.name}
-                        onChange={(e) => updateStaircase(wall.id, stair.id, 'name', e.target.value)}
-                        onBlur={() => setRenamingStairId(null)}
-                        onKeyDown={(e) => e.key === 'Enter' && setRenamingStairId(null)}
-                      />
-                    ) : (
-                      <button
-                        style={s.stairNameBtn}
-                        onClick={() => { setEditStair(stair); setStairsOpen(true) }}
-                      >
-                        {stair.name}
-                      </button>
-                    )}
+                    <input
+                      style={s.stairNameInput}
+                      value={stair.name}
+                      onChange={(e) => updateStaircase(wall.id, stair.id, 'name', e.target.value)}
+                    />
                     <button
                       style={s.stairIconBtn}
-                      onClick={() => setRenamingStairId(stair.id)}
-                      title="Переименовать"
+                      onClick={() => setExpandedStairId(isExpanded ? null : stair.id)}
+                      title={isExpanded ? 'Свернуть' : 'Показать маски'}
+                    >
+                      <ChevronDown size={12} style={{ transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'none' }} />
+                    </button>
+                    <button
+                      style={s.stairIconBtn}
+                      onClick={() => { setEditStair(stair); setStairsOpen(true) }}
+                      title="Настройки лестницы"
                     >
                       <Pencil size={12} />
                     </button>
@@ -217,10 +213,19 @@ export default function WallCard({ wall, result }) {
                       <Trash2 size={12} />
                     </button>
                   </div>
-                  {stairCalc && (
-                    <div style={s.stairMeta}>
-                      {stairCalc.riserHeight.toFixed(1)} / {stairCalc.treadDepth.toFixed(1)} см
-                      &nbsp;·&nbsp;{stairCalc.angle.toFixed(1)}°
+                  {isExpanded && (
+                    <div style={s.stairMaskList}>
+                      {stairCalc && (
+                        <div style={s.stairMeta}>
+                          {stairCalc.riserHeight.toFixed(1)} / {stairCalc.treadDepth.toFixed(1)} см · {stairCalc.angle.toFixed(1)}°
+                        </div>
+                      )}
+                      {stairMasks.map(m => (
+                        <div key={m.id} style={s.stairMaskItem}>
+                          <span style={s.stairMaskName}>{m.name}</span>
+                          <span style={s.stairMaskDim}>{(+m.width).toFixed(1)} × {(+m.height).toFixed(1)} см</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -319,11 +324,6 @@ const s = {
   // Элементы лестницы
   stairItem:        { background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' },
   stairItemRow:     { display: 'flex', alignItems: 'center', gap: 4, padding: '4px 8px' },
-  stairNameBtn:     {
-    flex: 1, height: 30, padding: '0 6px', background: 'transparent', border: 'none',
-    color: 'var(--text-primary)', fontSize: 12, fontWeight: 600,
-    cursor: 'pointer', textAlign: 'left',
-  },
   stairNameInput:   {
     flex: 1, height: 30, padding: '0 6px', background: 'rgba(0,0,0,0.2)',
     border: '1px solid var(--border-strong)', borderRadius: 6,
@@ -335,5 +335,9 @@ const s = {
     borderRadius: 7, color: '#94a3b8', cursor: 'pointer', flexShrink: 0,
   },
   stairDelBtn:      { color: '#f87171', background: 'rgba(239,68,68,0.08)', borderColor: 'rgba(239,68,68,0.2)' },
-  stairMeta:        { fontSize: 10, color: 'var(--text-hint)', padding: '2px 14px 6px' },
+  stairMaskList:    { borderTop: '1px solid var(--border)', padding: '4px 8px 6px', display: 'flex', flexDirection: 'column', gap: 2 },
+  stairMeta:        { fontSize: 10, color: 'var(--text-hint)', marginBottom: 4 },
+  stairMaskItem:    { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2px 4px', borderRadius: 5, background: 'rgba(255,255,255,0.03)' },
+  stairMaskName:    { fontSize: 11, color: 'var(--text-secondary)' },
+  stairMaskDim:     { fontSize: 10, color: 'var(--text-hint)', fontVariantNumeric: 'tabular-nums' },
 }
